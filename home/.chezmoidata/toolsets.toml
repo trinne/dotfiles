@@ -1,0 +1,12 @@
+# Toolsets: named groups of mise tools. Single source of truth for
+#   - `toolset add <name>...`  (adds them to a project's mise.toml)
+#   - host defaults            (~/.config/mise/conf.d/toolsets.toml, chosen at `chezmoi init`)
+
+[toolsets]
+node    = ["node@lts", "pnpm@latest"]
+python  = ["python@3.13", "uv@latest"]
+java    = ["java@temurin-25", "gradle@latest"]
+clojure = ["java@temurin-25", "clojure@latest", "leiningen@latest"]
+k8s     = ["kubectl@latest", "helm@latest", "k9s@latest", "stern@latest"]
+aws     = ["aws-cli@latest"]
+shell   = ["shellcheck@latest"]

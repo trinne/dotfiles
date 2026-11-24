@@ -1,0 +1,29 @@
+{{ if and (eq .chezmoi.os "linux") (not .isContainer) (not .isCI) -}}
+#!/usr/bin/env bash
+# Container engine on Linux / WSL hosts: {{ .containerEngine }}
+set -euo pipefail
+{{ if eq .containerEngine "podman" -}}
+if ! command -v podman >/dev/null; then
+  echo "==> Installing Podman"
+  sudo apt-get update -qq
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq podman uidmap slirp4netns passt
+fi
+# Docker-compatible API socket for Testcontainers & co (needs systemd; default on current WSL)
+if systemctl --user show-environment >/dev/null 2>&1; then
+  systemctl --user enable --now podman.socket
+else
+  echo "!! systemd user session not available: enable systemd in /etc/wsl.conf ([boot] systemd=true) and run" >&2
+  echo "   'systemctl --user enable --now podman.socket' afterwards" >&2
+fi
+{{- else -}}
+# Docker Engine directly on the host / inside WSL (no Docker Desktop needed)
+if ! command -v docker >/dev/null; then
+  echo "==> Installing Docker Engine"
+  curl -fsSL https://get.docker.com | sudo sh
+fi
+if ! id -nG "$USER" | grep -qw docker; then
+  sudo usermod -aG docker "$USER"
+  echo "==> Added $USER to the docker group (log out/in; on WSL run 'wsl --shutdown' in Windows)"
+fi
+{{- end }}
+{{ end -}}

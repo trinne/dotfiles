@@ -1,23 +1,22 @@
 // Template: copy to <project>/.devcontainer/devcontainer.json
 // Works with VS Code Dev Containers, JetBrains Gateway and the `devcontainer` CLI.
+// Podman users: set VS Code setting "dev.containers.dockerPath": "podman".
 {
   "name": "${localWorkspaceFolderBasename}",
   "image": "ghcr.io/trinne/devbox:latest",
   "remoteUser": "dev",
+  "updateRemoteUserUID": true,
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
 
-  // Docker CLI talking to the host engine (for testcontainers, compose etc.)
-  "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
-  },
-
   "mounts": [
+    "source=devbox-mise,target=/home/dev/.local/share/mise,type=volume",
+    "source=devbox-nvim,target=/home/dev/.local/share/nvim,type=volume",
     "source=devbox-history,target=/home/dev/.local/state/zsh,type=volume"
   ],
 
-  // Install the project's own tool versions from its mise.toml / .tool-versions
-  "postCreateCommand": "mise trust --yes --all && mise install --yes",
+  // Project tools from its mise.toml / .tool-versions (add them with `toolset add ...`)
+  "postCreateCommand": "mise trust --all --quiet; mise install --yes",
 
   "customizations": {
     "vscode": {

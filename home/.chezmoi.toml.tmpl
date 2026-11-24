@@ -24,9 +24,35 @@
 {{-   $email = env "GIT_USER_EMAIL" | default (get . "email" | default "") -}}
 {{- end -}}
 
+{{- /* Host-wide toolsets (see .chezmoidata/toolsets.toml). Projects normally pick their own via `toolset add`. */ -}}
+{{- $hostToolsets := env "DOTFILES_TOOLSETS" -}}
+{{- if not $hostToolsets -}}
+{{-   if $interactive -}}
+{{-     $hostToolsets = promptStringOnce . "hostToolsets" "Toolsets to install globally on this host (comma-separated: node,python,java,clojure,k8s,aws,shell; empty = none)" "" -}}
+{{-   else -}}
+{{-     $hostToolsets = get . "hostToolsets" | default "" -}}
+{{-   end -}}
+{{- end -}}
+
+{{- /* Container engine for this host */ -}}
+{{- $engines := list "podman" "docker" -}}
+{{- $engine := env "DOTFILES_CONTAINER_ENGINE" -}}
+{{- if not $engine -}}
+{{-   if $interactive -}}
+{{-     $engine = promptChoiceOnce . "containerEngine" "Container engine" $engines "podman" -}}
+{{-   else -}}
+{{-     $engine = get . "containerEngine" | default "podman" -}}
+{{-   end -}}
+{{- end -}}
+{{- if not (has $engine $engines) -}}
+{{-   fail (printf "containerEngine must be podman or docker, got %q" $engine) -}}
+{{- end -}}
+
 [data]
     name = {{ $name | quote }}
     email = {{ $email | quote }}
+    hostToolsets = {{ $hostToolsets | quote }}
+    containerEngine = {{ $engine | quote }}
     isMac = {{ $isMac }}
     isWSL = {{ $isWSL }}
     isContainer = {{ $isContainer }}

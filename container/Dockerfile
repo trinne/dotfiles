@@ -39,10 +39,17 @@ COPY --chown=$USERNAME:$USERNAME . /home/$USERNAME/.local/share/chezmoi
 RUN --mount=type=secret,id=github_token,uid=${USER_UID} \
     if [ -f /run/secrets/github_token ]; then export GITHUB_TOKEN="$(cat /run/secrets/github_token)"; fi \
  && DOTFILES_SOURCE="$HOME/.local/share/chezmoi" sh "$HOME/.local/share/chezmoi/install.sh" \
- && { mise cache clear --yes || true; }
+ && { mise cache clear --yes || true; } \
+ && rm -rf "$HOME/.local/share/mise/installs" && mise reshim \
+ && mkdir -p "$HOME/.local/share/mise" "$HOME/.local/share/nvim" "$HOME/.local/state/zsh"
 
-# Fail the build if the toolchain is not usable
-RUN zsh -lic 'node --version && python --version && java --version && nvim --version | head -1 && starship --version | head -1'
+# Fail the build if the base toolchain is not usable. Base tools live in
+# /usr/local/share/mise; languages come per project (mise.toml) at runtime.
+RUN zsh -lic 'nvim --version | head -1 && starship --version && rg --version | head -1 && chezmoi --version' \
+ && test -d /usr/local/share/mise/installs/neovim \
+ && ! zsh -lc 'command -v node' >/dev/null
 
 WORKDIR /workspace
+# Installs the project's mise tools into the devbox-mise volume, then runs the command
+ENTRYPOINT ["/home/dev/.local/bin/devbox-init"]
 CMD ["zsh", "-l"]

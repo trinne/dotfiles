@@ -1,18 +1,8 @@
-# Global tools, installed by mise on every machine and in the devbox image.
-# Projects pin their own versions in a project-level mise.toml.
+# Base tools: installed on every host and in the devbox image.
+# Languages and dev tools are NOT here: projects declare them in their own mise.toml
+# (see `toolset add ...`), hosts can opt in via ~/.config/mise/conf.d/toolsets.toml.
 
 [tools]
-# --- Languages ---
-node = "lts"
-pnpm = "latest"
-python = "3.13"
-uv = "latest"
-java = "temurin-25"
-clojure = "latest"
-leiningen = "latest"
-gradle = "latest"
-
-# --- CLI tools ---
 chezmoi = "latest"
 neovim = "latest"
 starship = "latest"
@@ -27,12 +17,6 @@ yq = "latest"
 gh = "latest"
 lazygit = "latest"
 delta = "latest"
-shellcheck = "latest"
-kubectl = "latest"
-helm = "latest"
-k9s = "latest"
-stern = "latest"
-aws-cli = "latest"
 
 [settings]
 experimental = true

@@ -15,5 +15,6 @@ path=("$HOME/.local/bin" $path)
 
 # Non-interactive shells (IDEs, `docker exec`, scripts) see mise tools via shims.
 # Interactive shells replace this with `mise activate` in .zshrc.
+[[ -d /usr/local/share/mise/shims ]] && path=(/usr/local/share/mise/shims $path)   # devbox base tools
 [[ -d "$XDG_DATA_HOME/mise/shims" ]] && path=("$XDG_DATA_HOME/mise/shims" $path)
 export PATH

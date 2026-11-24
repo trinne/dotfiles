@@ -5,12 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
-  linux:
+  # Bootstrap inside a container: base tools go system-wide, project toolsets work
+  linux-container:
     runs-on: ubuntu-latest
     container: debian:trixie
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - run: apt-get update -qq && apt-get install -y -qq git curl ca-certificates sudo
       - uses: actions/checkout@v5
@@ -18,21 +20,94 @@ jobs:
         run: DOTFILES_SOURCE="$GITHUB_WORKSPACE" sh ./install.sh
       - name: Idempotent (second apply changes nothing)
         run: |
-          export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+          export PATH="$HOME/.local/bin:/usr/local/share/mise/shims:$HOME/.local/share/mise/shims:$PATH"
           test -z "$(chezmoi diff --source "$GITHUB_WORKSPACE")"
           chezmoi verify --source "$GITHUB_WORKSPACE"
-      - name: Toolchain works
-        run: zsh -lic 'node --version && python --version && java --version && clojure -Sdescribe >/dev/null && lein version && nvim --version | head -1'
+      - name: Base tools work, no languages installed
+        run: |
+          zsh -lic 'nvim --version | head -1 && rg --version | head -1 && starship --version'
+          test -d /usr/local/share/mise/installs/neovim
+          ! zsh -lc 'mise which node' 2>/dev/null
+      - name: Project toolsets (toolset add node clojure)
+        run: |
+          mkdir -p /tmp/proj && cd /tmp/proj
+          zsh -lc 'toolset add node clojure && mise install --yes'
+          zsh -lc 'node --version && clojure -M -e "(println (clojure-version))" && lein version'
       - name: shellcheck scripts
-        run: zsh -lc 'shellcheck install.sh home/dot_local/bin/executable_devbox'
+        run: |
+          cd /tmp/proj && zsh -lc 'toolset add shell'
+          zsh -lc "cd /tmp/proj && shellcheck $GITHUB_WORKSPACE/install.sh $GITHUB_WORKSPACE/home/dot_local/bin/executable_devbox $GITHUB_WORKSPACE/home/dot_local/bin/executable_devbox-init $HOME/.local/bin/toolset"
+
+  # Bootstrap on a plain Linux host: base tools only (toolsets are opt-in)
+  linux-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bootstrap from this checkout
+        run: DOTFILES_SOURCE="$GITHUB_WORKSPACE" sh ./install.sh
+      - name: Base tools present, toolsets not installed
+        run: |
+          zsh -lic 'nvim --version | head -1 && rg --version | head -1 && starship --version && tmux -V'
+          ! zsh -lc 'mise which node' 2>/dev/null
+          ! zsh -lc 'mise which java' 2>/dev/null
+          test ! -e "$HOME/.config/mise/conf.d/toolsets.toml"
+          test ! -e "$HOME/.lein"
+
+  # Host with an opted-in toolset
+  linux-host-toolsets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bootstrap with DOTFILES_TOOLSETS=node,k8s
+        run: DOTFILES_TOOLSETS=node,k8s DOTFILES_SOURCE="$GITHUB_WORKSPACE" sh ./install.sh
+      - name: Toolsets installed globally
+        run: |
+          zsh -lc 'mise which node && mise which kubectl'
+          test -e "$HOME/.config/k9s/config.yaml"
+          test ! -e "$HOME/.lein"
 
   macos:
     runs-on: macos-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
       - name: Bootstrap from this checkout (casks + defaults skipped on CI)
         run: DOTFILES_SOURCE="$GITHUB_WORKSPACE" sh ./install.sh
-      - name: Toolchain works
-        run: zsh -lic 'node --version && python --version && java --version && nvim --version | head -1'
+      - name: Base tools work, no languages installed
+        run: |
+          zsh -lic 'nvim --version | head -1 && rg --version | head -1 && starship --version'
+          ! zsh -lc 'mise which node' 2>/dev/null
+
+  # devbox launcher against a locally built image, with both engines
+  devbox:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [docker, podman]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build image
+        run: |
+          echo "$GITHUB_TOKEN" > /tmp/gh_token
+          docker build --secret id=github_token,src=/tmp/gh_token -f container/Dockerfile -t devbox:ci .
+          rm /tmp/gh_token
+      - name: Load image into podman
+        if: matrix.engine == 'podman'
+        run: docker save devbox:ci | podman load
+      - name: Project with a node toolset
+        env:
+          DEVBOX_ENGINE: ${{ matrix.engine }}
+          DEVBOX_IMAGE: devbox:ci
+        run: |
+          devbox=$GITHUB_WORKSPACE/home/dot_local/bin/executable_devbox
+          mkdir -p /tmp/proj && printf '[tools]\nnode = "lts"\n' > /tmp/proj/mise.toml && cd /tmp/proj
+          # docker (no keep-id) writes as uid 1000; the runner user is 1001
+          [ "$DEVBOX_ENGINE" = docker ] && chmod 0777 /tmp/proj
+          bash "$devbox" node --version
+          bash "$devbox" node --version 2>&1 | tee second.log
+          ! grep -q "node@" second.log   # second run: nothing installed again
+          bash "$devbox" touch created-in-box
+          ls -ln created-in-box
+          if [ "$DEVBOX_ENGINE" = podman ]; then
+            test "$(stat -c %u created-in-box)" = "$(id -u)"   # keep-id preserves host ownership
+          fi

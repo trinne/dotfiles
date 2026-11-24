@@ -1,0 +1,24 @@
+# Container engine integration ({{ .containerEngine }}). Managed by chezmoi.
+{{- if eq .containerEngine "podman" }}
+
+# Docker CLI muscle memory
+command -v docker >/dev/null || alias docker=podman
+
+# Docker-API clients (Testcontainers, docker-compose, IDEs) talk to Podman's socket
+if [[ -z "${DOCKER_HOST:-}" ]]; then
+{{- if .isMac }}
+  _podman_sock_cache="$XDG_CACHE_HOME/podman-docker-host"
+  if [[ ! -s "$_podman_sock_cache" ]] && command -v podman >/dev/null; then
+    podman machine inspect --format '{{ "{{" }}.ConnectionInfo.PodmanSocket.Path{{ "}}" }}' 2>/dev/null >| "$_podman_sock_cache" || rm -f "$_podman_sock_cache"
+  fi
+  [[ -s "$_podman_sock_cache" && -S "$(<"$_podman_sock_cache")" ]] && export DOCKER_HOST="unix://$(<"$_podman_sock_cache")"
+  unset _podman_sock_cache
+{{- else }}
+  _podman_sock="${XDG_RUNTIME_DIR:-/run/user/$UID}/podman/podman.sock"
+  [[ -S "$_podman_sock" ]] && export DOCKER_HOST="unix://$_podman_sock"
+  unset _podman_sock
+{{- end }}
+fi
+# Rootless Podman: Testcontainers' Ryuk reaper needs a privileged container
+export TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED=true
+{{- end }}

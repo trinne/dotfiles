@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# toolset - add predefined groups of mise tools to the current project's mise.toml.
+#
+#   toolset list               show available toolsets
+#   toolset add node clojure   add them to ./mise.toml (via `mise use`) and install
+#
+# Toolsets are defined in the dotfiles repo: home/.chezmoidata/toolsets.toml
+set -euo pipefail
+
+declare -A TOOLSETS=(
+{{- range $name := keys .toolsets | sortAlpha }}
+  [{{ $name }}]="{{ index $.toolsets $name | join " " }}"
+{{- end }}
+)
+
+usage() {
+  echo "usage: toolset list | toolset add <toolset>..." >&2
+  exit 2
+}
+
+cmd="${1:-}"
+[[ -n "$cmd" ]] || usage
+shift
+
+case "$cmd" in
+  list|ls)
+    for name in $(printf '%s\n' "${!TOOLSETS[@]}" | sort); do
+      printf '%-8s %s\n' "$name" "${TOOLSETS[$name]}"
+    done
+    ;;
+  add)
+    (( $# )) || usage
+    if [[ "$PWD" == "$HOME" ]]; then
+      echo "toolset: refusing to write ~/mise.toml; run this in a project directory" >&2
+      exit 1
+    fi
+    declare -A seen=()
+    tools=()
+    for name in "$@"; do
+      [[ -n "${TOOLSETS[$name]:-}" ]] || { echo "toolset: unknown toolset '$name' (see: toolset list)" >&2; exit 1; }
+      for spec in ${TOOLSETS[$name]}; do
+        tool="${spec%%@*}"
+        [[ -n "${seen[$tool]:-}" ]] && continue
+        seen[$tool]=1
+        tools+=("$spec")
+      done
+    done
+    echo "==> mise use ${tools[*]}"
+    mise use "${tools[@]}"
+    ;;
+  *)
+    usage
+    ;;
+esac
