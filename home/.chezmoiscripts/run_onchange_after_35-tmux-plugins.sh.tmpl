@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# tmux.conf hash: {{ include "dot_config/tmux/tmux.conf" | sha256sum }}
+set -euo pipefail
+tpm="$HOME/.config/tmux/plugins/tpm/bin/install_plugins"
+if command -v tmux >/dev/null && [[ -x "$tpm" ]]; then
+  echo "==> tmux plugins"
+  TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/" "$tpm" >/dev/null || echo "!! tmux plugin install failed (run prefix + I in tmux)" >&2
+fi

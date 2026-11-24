@@ -1,0 +1,12 @@
+{{ if .isMac -}}
+#!/usr/bin/env bash
+# Brewfile hash: {{ include "dot_config/homebrew/Brewfile" | sha256sum }}
+set -euo pipefail
+eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
+{{- if .isCI }}
+echo "==> CI: skipping brew bundle"
+exit 0
+{{- end }}
+echo "==> brew bundle"
+brew bundle --file="$HOME/.config/homebrew/Brewfile"
+{{ end -}}

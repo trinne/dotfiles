@@ -1,0 +1,19 @@
+# macOS packages. CLI tools come from mise (~/.config/mise/config.toml).
+
+brew "git"
+brew "tmux"
+brew "eza"
+brew "coreutils"
+brew "gnupg"
+
+cask "1password"
+cask "1password-cli"
+cask "orbstack"            # Docker engine for macOS (lightweight Docker Desktop alternative)
+cask "vivaldi"
+cask "visual-studio-code"
+cask "intellij-idea"
+cask "alacritty"
+cask "rectangle"
+cask "alfred"
+cask "spotify"
+cask "font-meslo-lg-nerd-font"

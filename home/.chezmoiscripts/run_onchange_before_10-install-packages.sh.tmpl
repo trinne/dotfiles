@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Base system packages + mise. Re-runs when this file changes.
+set -euo pipefail
+
+{{ if .isMac -}}
+if ! xcode-select -p >/dev/null 2>&1; then
+  echo "==> Installing Xcode Command Line Tools (finish the GUI dialog, then re-run chezmoi apply)"
+  xcode-select --install || true
+  exit 1
+fi
+if ! command -v brew >/dev/null && [[ ! -x /opt/homebrew/bin/brew ]]; then
+  echo "==> Installing Homebrew"
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+{{- else if eq .chezmoi.os "linux" -}}
+packages=(zsh git curl ca-certificates unzip xz-utils build-essential tmux less locales openssh-client gnupg procps file)
+{{- if .isWSL }}
+packages+=(wslu)   # wslview: open URLs in the Windows browser
+{{- end }}
+
+SUDO=""
+[[ $(id -u) -ne 0 ]] && SUDO="sudo"
+
+if command -v apt-get >/dev/null; then
+  missing=()
+  for p in "${packages[@]}"; do
+    dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "install ok installed" || missing+=("$p")
+  done
+  if (( ${#missing[@]} )); then
+    echo "==> apt install ${missing[*]}"
+    $SUDO apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y -qq --no-install-recommends "${missing[@]}"
+  fi
+else
+  echo "!! Not a Debian/Ubuntu system, install manually: ${packages[*]}" >&2
+fi
+{{- end }}
+
+if ! command -v mise >/dev/null && [[ ! -x "$HOME/.local/bin/mise" ]]; then
+  echo "==> Installing mise"
+  curl -fsSL https://mise.run | MISE_QUIET=1 sh
+fi

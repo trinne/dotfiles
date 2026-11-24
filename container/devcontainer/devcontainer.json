@@ -1,0 +1,30 @@
+// Template: copy to <project>/.devcontainer/devcontainer.json
+// Works with VS Code Dev Containers, JetBrains Gateway and the `devcontainer` CLI.
+{
+  "name": "${localWorkspaceFolderBasename}",
+  "image": "ghcr.io/trinne/devbox:latest",
+  "remoteUser": "dev",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+
+  // Docker CLI talking to the host engine (for testcontainers, compose etc.)
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+
+  "mounts": [
+    "source=devbox-history,target=/home/dev/.local/state/zsh,type=volume"
+  ],
+
+  // Install the project's own tool versions from its mise.toml / .tool-versions
+  "postCreateCommand": "mise trust --yes --all && mise install --yes",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": { "zsh": { "path": "/bin/zsh", "args": ["-l"] } }
+      }
+    }
+  }
+}

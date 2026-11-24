@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# devbox - open the current directory inside the personal dev container.
+#
+#   devbox            interactive zsh in ./ mounted at /workspace
+#   devbox <cmd...>   run a command instead
+#
+# Env:
+#   DEVBOX_IMAGE   image to use (default ghcr.io/trinne/devbox:latest)
+#   DEVBOX_DOCKER  =1 to mount the host Docker socket into the container
+#   DEVBOX_PULL    =1 to pull the latest image first
+set -euo pipefail
+
+image="${DEVBOX_IMAGE:-ghcr.io/trinne/devbox:latest}"
+[[ "${DEVBOX_PULL:-0}" == 1 ]] && docker pull "$image"
+
+project="$(basename "$PWD" | tr -c 'a-zA-Z0-9_.-\n' '-')"
+args=(
+  --rm --interactive
+  --hostname "devbox-$project"
+  --volume "$PWD:/workspace"
+  --workdir /workspace
+  --volume devbox-history:/home/dev/.local/state/zsh   # shared shell history
+  --env TERM="${TERM:-xterm-256color}"
+  --env COLORTERM="${COLORTERM:-truecolor}"
+)
+[[ -t 0 && -t 1 ]] && args+=(--tty)
+
+# Git identity from the host
+if name="$(git config --get user.name)"; then
+  args+=(--env "GIT_AUTHOR_NAME=$name" --env "GIT_COMMITTER_NAME=$name")
+fi
+if email="$(git config --get user.email)"; then
+  args+=(--env "GIT_AUTHOR_EMAIL=$email" --env "GIT_COMMITTER_EMAIL=$email")
+fi
+
+# SSH agent forwarding (OrbStack / Docker Desktop on macOS expose a magic socket)
+if [[ "$(uname -s)" == Darwin ]]; then
+  args+=(--volume /run/host-services/ssh-auth.sock:/run/ssh-agent.sock --env SSH_AUTH_SOCK=/run/ssh-agent.sock)
+elif [[ -n "${SSH_AUTH_SOCK:-}" && -S "$SSH_AUTH_SOCK" ]]; then
+  args+=(--volume "$SSH_AUTH_SOCK:/run/ssh-agent.sock" --env SSH_AUTH_SOCK=/run/ssh-agent.sock)
+fi
+
+if [[ "${DEVBOX_DOCKER:-0}" == 1 ]]; then
+  args+=(--volume /var/run/docker.sock:/var/run/docker.sock)
+fi
+
+if (( $# )); then
+  exec docker run "${args[@]}" "$image" "$@"
+else
+  exec docker run "${args[@]}" "$image"
+fi

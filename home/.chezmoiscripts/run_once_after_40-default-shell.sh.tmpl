@@ -1,0 +1,12 @@
+{{ if not (or .isContainer .isCI) -}}
+#!/usr/bin/env bash
+# Make zsh the login shell. (In the devbox image this is done by the Dockerfile.)
+set -euo pipefail
+zsh_path="$(command -v zsh)"
+current="$(getent passwd "$USER" 2>/dev/null | cut -d: -f7 || dscl . -read "/Users/$USER" UserShell | awk '{print $2}')"
+if [[ "$current" != "$zsh_path" ]]; then
+  grep -qx "$zsh_path" /etc/shells || echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
+  echo "==> chsh -s $zsh_path"
+  chsh -s "$zsh_path"
+fi
+{{ end -}}

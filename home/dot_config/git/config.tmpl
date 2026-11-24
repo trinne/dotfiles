@@ -1,0 +1,48 @@
+{{- if or .name .email -}}
+[user]
+{{- if .name }}
+	name = {{ .name }}
+{{- end }}
+{{- if .email }}
+	email = {{ .email }}
+{{- end }}
+{{ end -}}
+[init]
+	defaultBranch = main
+[core]
+	pager = delta
+	autocrlf = input
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+	line-numbers = true
+[diff]
+	colorMoved = default
+	algorithm = histogram
+[merge]
+	conflictStyle = zdiff3
+[pull]
+	rebase = true
+[push]
+	autoSetupRemote = true
+[fetch]
+	prune = true
+[rebase]
+	autoStash = true
+	autoSquash = true
+[rerere]
+	enabled = true
+{{- if .isMac }}
+[credential]
+	helper = osxkeychain
+{{- else if .isWSL }}
+{{- $gcm := "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe" }}
+{{- if stat $gcm }}
+[credential]
+	helper = "{{ $gcm | replace " " "\\ " }}"
+{{- end }}
+{{- end }}
+[include]
+	# Unmanaged, machine-specific overrides (e.g. work email)
+	path = ~/.config/git/local

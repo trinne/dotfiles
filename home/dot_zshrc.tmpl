@@ -1,0 +1,56 @@
+# ~/.zshrc - interactive shell. Managed by chezmoi: edit with `chezmoi edit ~/.zshrc`.
+
+# --- Homebrew (macOS) ---------------------------------------------------------
+{{- if .isMac }}
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+{{- end }}
+
+# --- History ------------------------------------------------------------------
+HISTFILE="$XDG_STATE_HOME/zsh/history"
+[[ -d "${HISTFILE:h}" ]] || mkdir -p "${HISTFILE:h}"
+HISTSIZE=100000
+SAVEHIST=100000
+setopt EXTENDED_HISTORY SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS HIST_VERIFY
+
+# --- Options ------------------------------------------------------------------
+setopt AUTO_CD AUTO_PUSHD PUSHD_IGNORE_DUPS PUSHD_SILENT INTERACTIVE_COMMENTS NO_BEEP
+bindkey -e
+WORDCHARS=${WORDCHARS//[\/]}
+
+# --- mise (languages + CLI tools) ---------------------------------------------
+if command -v mise >/dev/null; then
+  eval "$(mise activate zsh)"
+  eval "$(mise hook-env -s zsh)"   # make tools available before the first prompt
+fi
+
+# --- Completion ---------------------------------------------------------------
+[[ -d "$XDG_CACHE_HOME/zsh" ]] || mkdir -p "$XDG_CACHE_HOME/zsh"
+fpath=("$XDG_CONFIG_HOME/zsh/completions" $fpath)
+autoload -Uz compinit
+compinit -d "$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/zcompcache"
+zstyle ':completion:*' use-cache on
+
+# --- Tool integrations --------------------------------------------------------
+[[ -t 0 ]] && command -v fzf >/dev/null && source <(fzf --zsh)
+command -v zoxide   >/dev/null && eval "$(zoxide init zsh)"
+command -v starship >/dev/null && eval "$(starship init zsh)"
+
+# --- Aliases & local overrides ------------------------------------------------
+for f in "$XDG_CONFIG_HOME"/zsh/*.zsh(N); do source "$f"; done
+# Machine-specific, unmanaged settings (secrets, work stuff) go here:
+[[ -f "$XDG_CONFIG_HOME/zsh/local.zsh.local" ]] && source "$XDG_CONFIG_HOME/zsh/local.zsh.local"
+
+# --- Plugins (must be last; syntax-highlighting after everything else) --------
+ZSH_PLUGINS="$XDG_DATA_HOME/zsh/plugins"
+[[ -f "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+  source "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh"
+[[ -f "$ZSH_PLUGINS/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
+  source "$ZSH_PLUGINS/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"

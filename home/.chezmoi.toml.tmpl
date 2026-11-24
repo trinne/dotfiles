@@ -1,0 +1,36 @@
+{{- /* Environment detection */ -}}
+{{- $isMac := eq .chezmoi.os "darwin" -}}
+{{- $isWSL := false -}}
+{{- if and (eq .chezmoi.os "linux") (hasKey .chezmoi "kernel") -}}
+{{-   if .chezmoi.kernel.osrelease | lower | contains "microsoft" -}}
+{{-     $isWSL = true -}}
+{{-   end -}}
+{{- end -}}
+{{- $isContainer := false -}}
+{{- if or (stat "/.dockerenv") (stat "/run/.containerenv") (env "REMOTE_CONTAINERS") (env "CODESPACES") (env "DEVBOX") -}}
+{{-   $isContainer = true -}}
+{{- end -}}
+{{- $isCI := not (not (env "CI")) -}}
+
+{{- /* Git identity: prompted once on hosts; containers get it at runtime from the host */ -}}
+{{- $interactive := and stdinIsATTY (not $isContainer) -}}
+{{- $name := "" -}}
+{{- $email := "" -}}
+{{- if $interactive -}}
+{{-   $name = promptStringOnce . "name" "Git user.name" -}}
+{{-   $email = promptStringOnce . "email" "Git user.email" -}}
+{{- else -}}
+{{-   $name = env "GIT_USER_NAME" | default (get . "name" | default "") -}}
+{{-   $email = env "GIT_USER_EMAIL" | default (get . "email" | default "") -}}
+{{- end -}}
+
+[data]
+    name = {{ $name | quote }}
+    email = {{ $email | quote }}
+    isMac = {{ $isMac }}
+    isWSL = {{ $isWSL }}
+    isContainer = {{ $isContainer }}
+    isCI = {{ $isCI }}
+
+[git]
+    autoCommit = false

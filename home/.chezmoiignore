@@ -1,0 +1,10 @@
+README.md
+
+{{ if not .isMac }}
+.config/alacritty
+.config/homebrew
+{{ end }}
+
+{{ if .isContainer }}
+.local/bin/devbox
+{{ end }}

@@ -1,0 +1,10 @@
+.DS_Store
+*.swp
+.idea/
+.vscode/
+.clj-kondo/.cache/
+.lsp/.cache/
+.cpcache/
+.nrepl-port
+mise.local.toml
+.env.local

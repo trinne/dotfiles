@@ -1,0 +1,40 @@
+# Global tools, installed by mise on every machine and in the devbox image.
+# Projects pin their own versions in a project-level mise.toml.
+
+[tools]
+# --- Languages ---
+node = "lts"
+pnpm = "latest"
+python = "3.13"
+uv = "latest"
+java = "temurin-25"
+clojure = "latest"
+leiningen = "latest"
+gradle = "latest"
+
+# --- CLI tools ---
+chezmoi = "latest"
+neovim = "latest"
+starship = "latest"
+fzf = "latest"
+zoxide = "latest"
+ripgrep = "latest"
+fd = "latest"
+bat = "latest"
+eza = { version = "latest", os = ["linux"] }   # no macOS binaries upstream -> Homebrew on mac
+jq = "latest"
+yq = "latest"
+gh = "latest"
+lazygit = "latest"
+delta = "latest"
+shellcheck = "latest"
+kubectl = "latest"
+helm = "latest"
+k9s = "latest"
+stern = "latest"
+aws-cli = "latest"
+
+[settings]
+experimental = true
+python.uv_venv_auto = true
+idiomatic_version_file_enable_tools = ["node", "python", "java"]
