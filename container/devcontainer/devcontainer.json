@@ -3,7 +3,7 @@
 // Podman users: set VS Code setting "dev.containers.dockerPath": "podman".
 {
   "name": "${localWorkspaceFolderBasename}",
-  "image": "ghcr.io/trinne/devbox:latest",
+  "image": "localhost/devbox:latest",   // built locally: `devbox build`
   "remoteUser": "dev",
   "updateRemoteUserUID": true,
   "workspaceFolder": "/workspace",

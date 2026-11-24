@@ -5,7 +5,7 @@ Uusi kone käyttökuntoon yhdellä komennolla. Kehitys tapahtuu kontissa, jossa 
 - **[chezmoi](https://chezmoi.io)** hallitsee konfiguraatiotiedostot (`home/`). Templatet erottavat macOS:n, WSL:n ja kontin.
 - **[mise](https://mise.jdx.dev)** asentaa työkalut samalla tavalla kaikkialla: perustyökalut kaikille koneille, kielet ja kehitystyökalut projektikohtaisesti.
 - **Homebrew** vain macOS:n GUI-sovelluksiin (`home/dot_config/homebrew/Brewfile.tmpl`).
-- **devbox** on samoista dotfileistä rakennettu kontti-image (`ghcr.io/trinne/devbox`). Se toimii sekä Podmanilla että Dockerilla.
+- **devbox** on samoista dotfileistä rakennettu kontti-image. Se rakennetaan jokaisella koneella paikallisesti, eikä rekisteriä tarvita. Se toimii sekä Podmanilla että Dockerilla.
 
 ## Asennus
 
@@ -13,7 +13,7 @@ Uusi kone käyttökuntoon yhdellä komennolla. Kehitys tapahtuu kontissa, jossa 
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/trinne/dotfiles/main/install.sh)"
 ```
-Asentaa Xcode CLT:n (jos se puuttuu, aja komento uudelleen dialogin jälkeen), Homebrew'n, Brewfilen sovellukset, valitun konttimoottorin, perustyökalut ja macOS-asetukset. Kysyy ensimmäisellä kerralla:
+Asentaa Xcode CLT:n (jos se puuttuu, aja komento uudelleen dialogin jälkeen), Homebrew'n, Brewfilen sovellukset, valitun konttimoottorin, perustyökalut ja macOS-asetukset sekä rakentaa devbox-imagen. Kysyy ensimmäisellä kerralla:
 
 | Kysymys | Oletus |
 |---|---|
@@ -27,7 +27,7 @@ Vastaukset tallentuvat tiedostoon `~/.config/chezmoi/chezmoi.toml`. Niitä voi m
 1. PowerShell: `wsl --install -d Ubuntu`
 2. Ubuntussa sama komento kuin yllä.
 
-Asentaa apt-perustyökalut, valitun konttimoottorin suoraan WSL:ään (Podman tai Docker Engine, ei Docker Desktopia) ja perustyökalut. Lopuksi aja `wsl --shutdown`, jotta oletusshell ja ryhmäjäsenyydet tulevat voimaan.
+Asentaa apt-perustyökalut, valitun konttimoottorin suoraan WSL:ään (Podman tai Docker Engine, ei Docker Desktopia) ja perustyökalut. Lopuksi aja `wsl --shutdown`, jotta oletusshell ja ryhmäjäsenyydet tulevat voimaan. Jos devbox-imagen build ohitettiin, koska moottori ei ollut vielä käytettävissä (esim. Dockerin ryhmäjäsenyys), se rakentuu ensimmäisellä `devbox`-ajolla.
 
 ## Mitä asennetaan missä
 
@@ -57,7 +57,7 @@ cd ~/projects/foo && devbox          # interaktiivinen zsh
 devbox lein test                     # yksittäinen komento projektin työkaluilla
 DEVBOX_ARGS="-p 3000:3000" devbox    # julkaise portti dev-palvelimelle
 DEVBOX_DOCKER=1 devbox               # hostin kontti-API mukaan (Testcontainers)
-DEVBOX_PULL=1 devbox                 # hae uusin image ensin
+devbox build                         # rakenna image uudelleen (--pull: myös uusi Debian-pohja)
 ```
 
 | Volume | Sisältö |
@@ -66,12 +66,21 @@ DEVBOX_PULL=1 devbox                 # hae uusin image ensin
 | `devbox-nvim` | Lazy-pluginit ja mason-LSP:t |
 | `devbox-history` | zsh-historia |
 
-Perustyökalut ovat imagessa järjestelmätasolla (`/usr/local/share/mise`). Siksi `DEVBOX_PULL=1` päivittää ne aina, eikä volume peitä niitä.
+Perustyökalut ovat imagessa järjestelmätasolla (`/usr/local/share/mise`), joten volume ei peitä niitä, ja uusi image tuo aina uudet perustyökalut.
+
+### Image rakennetaan paikallisesti
+Imagea ei julkaista mihinkään rekisteriin. Jokainen kone rakentaa sen itse dotfiles-checkoutista `~/.local/share/chezmoi` nimellä `localhost/devbox:latest`:
+- **Bootstrap** (`install.sh`) rakentaa imagen, jos konttimoottori on jo käytettävissä.
+- **`devbox`** rakentaa imagen automaattisesti, jos sitä ei vielä ole.
+- **`chezmoi update`** rakentaa imagen uudelleen, jos imageen päätyvät tiedostot (`home/`, `container/`, `install.sh`) muuttuivat.
+- **`devbox build --pull`** rakentaa sen käsin. Aja se esimerkiksi silloin, kun haluat perustyökaluista uusimmat versiot.
+
+Paikallisesti muokatut, vielä pushaamattomat dotfilet tulevat mukaan heti, kun ajat `devbox build`.
 
 Git-identiteetti välitetään hostilta. SSH-agentti välitetään Linuxilla/WSL:ssä ja macOSilla Dockerin/OrbStackin kanssa.
 
 ### VS Code / JetBrains (Dev Containers)
-Kopioi `container/devcontainer/devcontainer.json` projektin `.devcontainer/`-hakemistoon. Se käyttää samaa imagea ja samoja volumeja, ja `postCreateCommand` asentaa projektin `mise.toml`:n työkalut. Podmanin kanssa VS Code tarvitsee asetuksen `"dev.containers.dockerPath": "podman"`.
+Kopioi `container/devcontainer/devcontainer.json` projektin `.devcontainer/`-hakemistoon. Se käyttää samaa paikallista imagea (`localhost/devbox:latest`; aja `devbox build`, jos sitä ei vielä ole) ja samoja volumeja, ja `postCreateCommand` asentaa projektin `mise.toml`:n työkalut. Podmanin kanssa VS Code tarvitsee asetuksen `"dev.containers.dockerPath": "podman"`.
 
 ## Konttimoottori: Podman vai Docker
 
@@ -121,11 +130,10 @@ home/                         chezmoi-lähde (.chezmoiroot)
   dot_zshrc.tmpl, dot_zshenv, dot_config/...
 container/Dockerfile          devbox-image
 container/devcontainer/       devcontainer.json-malli
-.github/workflows/            testit (kontti, Linux-host, macOS, devbox × podman/docker) ja imagen julkaisu
+.github/workflows/test.yml    testit (kontti, Linux-host, macOS, devbox-build × podman/docker), myös viikoittain
 ```
 
-Imagen voi rakentaa paikallisesti:
+Imagen voi rakentaa myös toisesta checkoutista, esimerkiksi tätä repoa kehittäessä:
 ```sh
-podman build -f container/Dockerfile -t devbox .    # tai docker build
-DEVBOX_IMAGE=localhost/devbox devbox
+DEVBOX_SOURCE=~/projects/dotfiles devbox build
 ```

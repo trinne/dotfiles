@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # devbox: personal development image built from these dotfiles.
-# Build from the repo root:  docker build -f container/Dockerfile -t devbox .
+# Built locally by `devbox build` (podman/docker build -f container/Dockerfile -t localhost/devbox .)
 FROM debian:trixie-slim
 
 ARG USERNAME=dev

@@ -1,0 +1,23 @@
+{{ if and (not .isContainer) (not .isCI) -}}
+#!/usr/bin/env bash
+# Build the devbox image locally whenever the files it is made of change.
+# Inputs checksum: {{ output "sh" "-c" (printf "cd %q && find home container install.sh -type f | LC_ALL=C sort | xargs cat | cksum" .chezmoi.workingTree) | trim }}
+set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"
+{{- if .isMac }}
+eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
+{{- end }}
+
+engine="{{ .containerEngine }}"
+if ! command -v "$engine" >/dev/null; then
+  echo "!! $engine not installed yet: run 'devbox build' later" >&2
+  exit 0
+fi
+if ! "$engine" info >/dev/null 2>&1; then
+  echo "!! $engine is not usable right now (not running / no permission yet): run 'devbox build' later" >&2
+  exit 0
+fi
+echo "==> Building the devbox image ($engine)"
+DEVBOX_ENGINE="$engine" "$HOME/.local/bin/devbox" build \
+  || echo "!! devbox image build failed: fix and run 'devbox build'" >&2
+{{ end -}}

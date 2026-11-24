@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 4 * * 1"   # weekly: catch upstream tool releases that break the bootstrap or image
+  workflow_dispatch:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,27 +80,28 @@ jobs:
           zsh -lic 'nvim --version | head -1 && rg --version | head -1 && starship --version'
           ! zsh -lc 'mise which node' 2>/dev/null
 
-  # devbox launcher against a locally built image, with both engines
+  # devbox: local image build (`devbox build` and auto-build) + run, with both engines
   devbox:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         engine: [docker, podman]
+    env:
+      DEVBOX_ENGINE: ${{ matrix.engine }}
+      DEVBOX_SOURCE: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v5
-      - name: Build image
+      - name: Auto-build on first use
         run: |
-          echo "$GITHUB_TOKEN" > /tmp/gh_token
-          docker build --secret id=github_token,src=/tmp/gh_token -f container/Dockerfile -t devbox:ci .
-          rm /tmp/gh_token
-      - name: Load image into podman
-        if: matrix.engine == 'podman'
-        run: docker save devbox:ci | podman load
+          devbox=$GITHUB_WORKSPACE/home/dot_local/bin/executable_devbox
+          mkdir -p /tmp/empty && cd /tmp/empty
+          bash "$devbox" true 2>&1 | tee first.log
+          grep -q "not found, building it" first.log
+          "$DEVBOX_ENGINE" image inspect localhost/devbox:latest >/dev/null
+      - name: Explicit rebuild (devbox build)
+        run: bash "$GITHUB_WORKSPACE/home/dot_local/bin/executable_devbox" build
       - name: Project with a node toolset
-        env:
-          DEVBOX_ENGINE: ${{ matrix.engine }}
-          DEVBOX_IMAGE: devbox:ci
         run: |
           devbox=$GITHUB_WORKSPACE/home/dot_local/bin/executable_devbox
           mkdir -p /tmp/proj && printf '[tools]\nnode = "lts"\n' > /tmp/proj/mise.toml && cd /tmp/proj

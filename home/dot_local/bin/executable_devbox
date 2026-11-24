@@ -3,15 +3,22 @@
 #
 #   devbox            interactive zsh with ./ mounted at /workspace
 #   devbox <cmd...>   run a command instead (through the project's mise tools)
+#   devbox build      (re)build the image locally from the dotfiles source
+#                     (--pull also refreshes the Debian base image)
+#   devbox -- <cmd>   run a command literally named `build` etc.
+#
+# The image is built locally (no registry) from ~/.local/share/chezmoi, the
+# dotfiles checkout chezmoi applies from. It is built automatically on first use
+# and rebuilt by `chezmoi update` when the files it is made of change.
 #
 # The project's tools come from its mise.toml (see `toolset add ...`) and are
 # installed on first use into the shared `devbox-mise` volume.
 #
 # Env:
 #   DEVBOX_ENGINE  podman | docker (default: podman if installed, else docker)
-#   DEVBOX_IMAGE   image to use (default ghcr.io/trinne/devbox:latest)
+#   DEVBOX_IMAGE   image name (default localhost/devbox:latest)
+#   DEVBOX_SOURCE  dotfiles checkout to build from (default: `chezmoi source-path`)
 #   DEVBOX_DOCKER  =1 to expose the host engine's API socket in the container
-#   DEVBOX_PULL    =1 to pull the latest image first
 #   DEVBOX_ARGS    extra run arguments, e.g. DEVBOX_ARGS="-p 3000:3000"
 set -euo pipefail
 
@@ -24,8 +31,52 @@ if [[ -z "$engine" ]]; then
 fi
 command -v "$engine" >/dev/null || { echo "devbox: '$engine' not found" >&2; exit 1; }
 
-image="${DEVBOX_IMAGE:-ghcr.io/trinne/devbox:latest}"
-[[ "${DEVBOX_PULL:-0}" == 1 ]] && "$engine" pull "$image"
+image="${DEVBOX_IMAGE:-localhost/devbox:latest}"
+
+build_image() {
+  local src="${DEVBOX_SOURCE:-}"
+  if [[ -z "$src" ]]; then
+    src="$(chezmoi source-path 2>/dev/null)" || src="$HOME/.local/share/chezmoi/home"
+    src="${src%/home}"   # .chezmoiroot = home; the Dockerfile lives next to it
+  fi
+  [[ -f "$src/container/Dockerfile" ]] || { echo "devbox: no container/Dockerfile in $src (set DEVBOX_SOURCE)" >&2; exit 1; }
+
+  local build_args=(-f "$src/container/Dockerfile" -t "$image")
+  [[ "${1:-}" == --pull ]] && build_args+=(--pull)
+
+  # Optional GitHub token avoids API rate limits while mise downloads tools
+  local token="${GITHUB_TOKEN:-}" token_file=""
+  [[ -z "$token" ]] && command -v gh >/dev/null && token="$(gh auth token 2>/dev/null || true)"
+  if [[ -n "$token" ]]; then
+    token_file="$(mktemp)"
+    chmod 600 "$token_file"
+    printf '%s' "$token" > "$token_file"
+    # shellcheck disable=SC2064
+    trap "rm -f '$token_file'" EXIT
+    build_args+=(--secret "id=github_token,src=$token_file")
+  fi
+
+  echo "==> $engine build -t $image $src"
+  DOCKER_BUILDKIT=1 "$engine" build "${build_args[@]}" "$src"
+  [[ -n "$token_file" ]] && rm -f "$token_file"
+  return 0
+}
+
+case "${1:-}" in
+  build)
+    shift
+    build_image "$@"
+    exit 0
+    ;;
+  --)
+    shift
+    ;;
+esac
+
+if ! "$engine" image inspect "$image" >/dev/null 2>&1; then
+  echo "devbox: image $image not found, building it (one-time, a couple of minutes)" >&2
+  build_image
+fi
 
 project="$(basename "$PWD" | tr -c 'a-zA-Z0-9_.\n-' '-')"
 args=(
