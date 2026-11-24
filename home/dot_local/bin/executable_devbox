@@ -45,21 +45,12 @@ build_image() {
   [[ "${1:-}" == --pull ]] && build_args+=(--pull)
 
   # Optional GitHub token avoids API rate limits while mise downloads tools
-  local token="${GITHUB_TOKEN:-}" token_file=""
+  local token="${GITHUB_TOKEN:-}"
   [[ -z "$token" ]] && command -v gh >/dev/null && token="$(gh auth token 2>/dev/null || true)"
-  if [[ -n "$token" ]]; then
-    token_file="$(mktemp)"
-    chmod 600 "$token_file"
-    printf '%s' "$token" > "$token_file"
-    # shellcheck disable=SC2064
-    trap "rm -f '$token_file'" EXIT
-    build_args+=(--secret "id=github_token,src=$token_file")
-  fi
+  [[ -n "$token" ]] && build_args+=(--secret "id=github_token,env=GITHUB_TOKEN")
 
   echo "==> $engine build -t $image $src"
-  DOCKER_BUILDKIT=1 "$engine" build "${build_args[@]}" "$src"
-  [[ -n "$token_file" ]] && rm -f "$token_file"
-  return 0
+  GITHUB_TOKEN="$token" DOCKER_BUILDKIT=1 "$engine" build "${build_args[@]}" "$src"
 }
 
 case "${1:-}" in

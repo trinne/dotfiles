@@ -10,7 +10,7 @@
 {{- if or (stat "/.dockerenv") (stat "/run/.containerenv") (env "REMOTE_CONTAINERS") (env "CODESPACES") (env "DEVBOX") -}}
 {{-   $isContainer = true -}}
 {{- end -}}
-{{- $isCI := not (not (env "CI")) -}}
+{{- $isCI := ne (env "CI") "" -}}
 
 {{- /* Git identity: prompted once on hosts; containers get it at runtime from the host */ -}}
 {{- $interactive := and stdinIsATTY (not $isContainer) -}}
@@ -25,14 +25,16 @@
 {{- end -}}
 
 {{- /* Host-wide toolsets (see .chezmoidata/toolsets.toml). Projects normally pick their own via `toolset add`. */ -}}
-{{- $hostToolsets := env "DOTFILES_TOOLSETS" -}}
-{{- if not $hostToolsets -}}
+{{- /* Names are validated in dot_config/mise/conf.d/toolsets.toml.tmpl (.chezmoidata is not available here). */ -}}
+{{- $toolsetsSpec := env "DOTFILES_TOOLSETS" -}}
+{{- if not $toolsetsSpec -}}
 {{-   if $interactive -}}
-{{-     $hostToolsets = promptStringOnce . "hostToolsets" "Toolsets to install globally on this host (comma-separated: node,python,java,clojure,k8s,aws,shell; empty = none)" "" -}}
+{{-     $toolsetsSpec = promptStringOnce . "hostToolsetsSpec" "Toolsets to install globally on this host (comma-separated: node,python,java,clojure,k8s,aws,shell; empty = none)" "" -}}
 {{-   else -}}
-{{-     $hostToolsets = get . "hostToolsets" | default "" -}}
+{{-     $toolsetsSpec = get . "hostToolsetsSpec" | default "" -}}
 {{-   end -}}
 {{- end -}}
+{{- $hostToolsets := $toolsetsSpec | replace " " "" | splitList "," | compact -}}
 
 {{- /* Container engine for this host */ -}}
 {{- $engines := list "podman" "docker" -}}
@@ -51,12 +53,10 @@
 [data]
     name = {{ $name | quote }}
     email = {{ $email | quote }}
-    hostToolsets = {{ $hostToolsets | quote }}
+    hostToolsetsSpec = {{ $toolsetsSpec | quote }}
+    hostToolsets = {{ $hostToolsets | toJson }}
     containerEngine = {{ $engine | quote }}
     isMac = {{ $isMac }}
     isWSL = {{ $isWSL }}
     isContainer = {{ $isContainer }}
     isCI = {{ $isCI }}
-
-[git]
-    autoCommit = false

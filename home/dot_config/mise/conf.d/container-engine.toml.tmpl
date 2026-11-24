@@ -1,0 +1,6 @@
+{{- if eq .containerEngine "podman" -}}
+# Compose provider for `podman compose` (and the `dc` alias). Hosts with Docker
+# get compose from Docker Engine / OrbStack instead.
+[tools]
+docker-compose = "latest"
+{{ end -}}

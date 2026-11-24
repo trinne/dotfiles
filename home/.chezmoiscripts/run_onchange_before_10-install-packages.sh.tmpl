@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Base system packages + mise. Re-runs when this file changes.
+# Base system packages + mise. Re-runs when this file or packages/apt.txt changes.
 set -euo pipefail
 
 {{ if .isMac -}}
@@ -13,13 +13,14 @@ if ! command -v brew >/dev/null && [[ ! -x /opt/homebrew/bin/brew ]]; then
   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 {{- else if eq .chezmoi.os "linux" -}}
-packages=(zsh git curl ca-certificates unzip xz-utils build-essential tmux less locales openssh-client gnupg procps file)
-{{- if .isWSL }}
-packages+=(wslu)   # wslview: open URLs in the Windows browser
-{{- end }}
+{{ template "as-root.sh" . }}
 
-SUDO=""
-[[ $(id -u) -ne 0 ]] && SUDO="sudo"
+packages=(
+{{- range include (joinPath .chezmoi.workingTree "packages/apt.txt") | splitList "\n" }}
+{{- $p := trim . }}{{ if and $p (not (hasPrefix "#" $p)) }} {{ $p }}{{ end }}
+{{- end }}
+{{- if .isWSL }} wslu{{ end }}   # wslu: wslview opens URLs in the Windows browser
+)
 
 if command -v apt-get >/dev/null; then
   missing=()
@@ -28,8 +29,8 @@ if command -v apt-get >/dev/null; then
   done
   if (( ${#missing[@]} )); then
     echo "==> apt install ${missing[*]}"
-    $SUDO apt-get update -qq
-    DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y -qq --no-install-recommends "${missing[@]}"
+    as_root apt-get update -qq
+    as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends "${missing[@]}"
   fi
 else
   echo "!! Not a Debian/Ubuntu system, install manually: ${packages[*]}" >&2

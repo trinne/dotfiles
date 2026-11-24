@@ -11,6 +11,22 @@ export PAGER="less"
 export LESS="-R -F -i"
 
 typeset -U path PATH
+{{- if .isMac }}
+
+# Homebrew for every zsh, incl. non-interactive ones started by IDEs and scripts.
+# Static equivalent of `brew shellenv` (keeps this file fast); .zprofile re-adds it
+# in front after macOS' path_helper reorders PATH for login shells.
+if [[ -d /opt/homebrew ]]; then
+  export HOMEBREW_PREFIX=/opt/homebrew HOMEBREW_CELLAR=/opt/homebrew/Cellar HOMEBREW_REPOSITORY=/opt/homebrew
+  path=(/opt/homebrew/bin /opt/homebrew/sbin $path)
+fi
+{{- end }}
+{{- if .isWSL }}
+
+# Open URLs (gh auth login, xdg-open, ...) in the Windows browser
+export BROWSER=wslview
+{{- end }}
+
 path=("$HOME/.local/bin" $path)
 
 # Non-interactive shells (IDEs, `docker exec`, scripts) see mise tools via shims.

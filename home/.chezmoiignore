@@ -1,7 +1,5 @@
 README.md
 
-{{- $ts := .hostToolsets | replace " " "" | splitList "," | compact }}
-
 {{ if not .isMac }}
 .config/alacritty
 .config/homebrew
@@ -11,20 +9,21 @@ README.md
 # host-only: the devbox launcher and container-engine integration
 .local/bin/devbox
 .config/zsh/container-engine.zsh
+.config/mise/conf.d/container-engine.toml
 {{ else }}
 # container-only: entrypoint helper
 .local/bin/devbox-init
 {{ end }}
 
-{{ if not $ts }}
+{{ if not .hostToolsets }}
 .config/mise/conf.d/toolsets.toml
 {{ end }}
 
 {{/* Toolset-specific configs: always in containers, on hosts only with that toolset */}}
-{{ if not (or .isContainer (has "clojure" $ts)) }}
+{{ if not (or .isContainer (has "clojure" .hostToolsets)) }}
 .lein
 .shadow-cljs
 {{ end }}
-{{ if not (or .isContainer (has "k8s" $ts)) }}
+{{ if not (or .isContainer (has "k8s" .hostToolsets)) }}
 .config/k9s
 {{ end }}

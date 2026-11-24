@@ -1,0 +1,5 @@
+{{- if .isMac -}}
+# Login shells: macOS' /etc/zprofile (path_helper) moves system dirs in front of
+# Homebrew, so put Homebrew first again (path is deduplicated in .zshenv).
+[[ -d /opt/homebrew ]] && path=(/opt/homebrew/bin /opt/homebrew/sbin $path)
+{{ end -}}

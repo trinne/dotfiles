@@ -1,139 +1,141 @@
 # dotfiles
 
-Uusi kone käyttökuntoon yhdellä komennolla. Kehitys tapahtuu kontissa, jossa on sama shell ja editori kuin hostilla.
+A new machine ready with one command. Development happens in a container that has the same shell and editor as the host.
 
-- **[chezmoi](https://chezmoi.io)** hallitsee konfiguraatiotiedostot (`home/`). Templatet erottavat macOS:n, WSL:n ja kontin.
-- **[mise](https://mise.jdx.dev)** asentaa työkalut samalla tavalla kaikkialla: perustyökalut kaikille koneille, kielet ja kehitystyökalut projektikohtaisesti.
-- **Homebrew** vain macOS:n GUI-sovelluksiin (`home/dot_config/homebrew/Brewfile.tmpl`).
-- **devbox** on samoista dotfileistä rakennettu kontti-image. Se rakennetaan jokaisella koneella paikallisesti, eikä rekisteriä tarvita. Se toimii sekä Podmanilla että Dockerilla.
+- **[chezmoi](https://chezmoi.io)** manages the config files (`home/`). Templates handle the differences between macOS, WSL and the container.
+- **[mise](https://mise.jdx.dev)** installs tools the same way everywhere: base tools on every machine, languages and dev tools per project.
+- **Homebrew** is used only for macOS GUI apps (`home/dot_config/homebrew/Brewfile.tmpl`).
+- **devbox** is a container image built from these same dotfiles. Every machine builds it locally, so no registry is needed. It works with both Podman and Docker.
 
-## Asennus
+## Installation
 
 ### macOS
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/trinne/dotfiles/main/install.sh)"
 ```
-Asentaa Xcode CLT:n (jos se puuttuu, aja komento uudelleen dialogin jälkeen), Homebrew'n, Brewfilen sovellukset, valitun konttimoottorin, perustyökalut ja macOS-asetukset sekä rakentaa devbox-imagen. Kysyy ensimmäisellä kerralla:
+Installs the Xcode Command Line Tools (if they are missing, run the command again after the dialog), Homebrew, the Brewfile apps, the selected container engine, the base tools and the macOS defaults, and builds the devbox image. On the first run it asks:
 
-| Kysymys | Oletus |
+| Question | Default |
 |---|---|
 | Git `user.name` / `user.email` | – |
-| Hostille globaalisti asennettavat toolsetit | ei mitään |
-| Konttimoottori (`podman` / `docker`) | `podman` |
+| Toolsets to install globally on the host | none |
+| Container engine (`podman` / `docker`) | `podman` |
 
-Vastaukset tallentuvat tiedostoon `~/.config/chezmoi/chezmoi.toml`. Niitä voi muuttaa myöhemmin komennolla `chezmoi init --prompt && chezmoi apply`.
+The answers are stored in `~/.config/chezmoi/chezmoi.toml`. Change them later with `chezmoi init --prompt && chezmoi apply`.
 
 ### Windows (WSL)
-1. PowerShell: `wsl --install -d Ubuntu`
-2. Ubuntussa sama komento kuin yllä.
+1. In PowerShell: `wsl --install -d Ubuntu`
+2. In Ubuntu, run the same command as above.
 
-Asentaa apt-perustyökalut, valitun konttimoottorin suoraan WSL:ään (Podman tai Docker Engine, ei Docker Desktopia) ja perustyökalut. Lopuksi aja `wsl --shutdown`, jotta oletusshell ja ryhmäjäsenyydet tulevat voimaan. Jos devbox-imagen build ohitettiin, koska moottori ei ollut vielä käytettävissä (esim. Dockerin ryhmäjäsenyys), se rakentuu ensimmäisellä `devbox`-ajolla.
+Installs the base apt packages, the selected container engine directly inside WSL (Podman or Docker Engine, no Docker Desktop) and the base tools. Finally run `wsl --shutdown` so that the default shell and group memberships take effect. If the devbox image build was skipped because the engine was not usable yet (e.g. the Docker group membership), the image is built on the first `devbox` run.
 
-## Mitä asennetaan missä
+## What is installed where
 
-| | Host (mac / WSL) | devbox-kontti |
+| | Host (mac / WSL) | devbox container |
 |---|---|---|
-| **Perusta**: zsh, starship, fzf, zoxide, git, chezmoi, mise, tmux, Neovim, rg, fd, bat, eza, jq, yq, gh, lazygit, delta | ✓ | ✓ (imagessa) |
-| **Konttimoottori**: Podman tai Docker/OrbStack | ✓ | – |
-| **Toolsetit**: node, python, java, clojure, k8s, aws, shell | vain valitut | projektin `mise.toml`:n mukaan |
+| **Base**: zsh, starship, fzf, zoxide, git, chezmoi, mise, tmux, Neovim, rg, fd, bat, eza, jq, yq, gh, lazygit, delta | ✓ | ✓ (in the image) |
+| **Container engine**: Podman or Docker/OrbStack | ✓ | – |
+| **Toolsets**: node, python, java, clojure, k8s, aws, shell | only the selected ones | from the project's `mise.toml` |
 
-- Perusta määritellään tiedostossa `home/dot_config/mise/config.toml`.
-- Toolsetit määritellään tiedostossa `home/.chezmoidata/toolsets.toml`. Lisää uusi toolset sinne, niin se on käytettävissä sekä `toolset`-komennolla että hostin valinnoissa.
+- The base tools are defined in `home/dot_config/mise/config.toml`.
+- Toolsets are defined in `home/.chezmoidata/toolsets.toml`. A toolset added there is available both to the `toolset` command and as a host option.
 
-### Toolsetit projektissa
+### Toolsets in a project
 ```sh
 cd ~/projects/foo
-toolset list               # näytä saatavilla olevat
-toolset add node clojure   # kirjoittaa ./mise.toml:n ja asentaa työkalut
+toolset list               # show the available toolsets
+toolset add node clojure   # writes ./mise.toml and installs the tools
 ```
-`toolset add` on lyhenne komennolle `mise use`. Versioita voi muokata suoraan `mise.toml`:ssa, tai lisätä minkä tahansa muun työkalun komennolla `mise use <tool>@<versio>`.
+`toolset add` is a shortcut for `mise use`. Edit versions directly in `mise.toml`, or add any other tool with `mise use <tool>@<version>`.
 
-## Kehitys kontissa
+## Developing in a container
 
-### devbox (komentorivi)
-`devbox` avaa nykyisen hakemiston kontissa polussa `/workspace`. Kontissa on sama zsh, tmux ja nvim kuin hostilla. Projektin `mise.toml`:n työkalut asennetaan ensimmäisellä käynnistyksellä.
+### devbox (command line)
+`devbox` opens the current directory in a container at `/workspace`. The container has the same zsh, tmux and nvim as the host. The tools from the project's `mise.toml` are installed on first start.
 ```sh
-cd ~/projects/foo && devbox          # interaktiivinen zsh
-devbox lein test                     # yksittäinen komento projektin työkaluilla
-DEVBOX_ARGS="-p 3000:3000" devbox    # julkaise portti dev-palvelimelle
-DEVBOX_DOCKER=1 devbox               # hostin kontti-API mukaan (Testcontainers)
-devbox build                         # rakenna image uudelleen (--pull: myös uusi Debian-pohja)
+cd ~/projects/foo && devbox          # interactive zsh
+devbox lein test                     # a single command with the project's tools
+DEVBOX_ARGS="-p 3000:3000" devbox    # publish a port for a dev server
+DEVBOX_DOCKER=1 devbox               # expose the host container API (Testcontainers)
+devbox build                         # rebuild the image (--pull: also a fresh Debian base)
 ```
 
-| Volume | Sisältö |
+| Volume | Contents |
 |---|---|
-| `devbox-mise` | projektien työkalut, yhteinen kaikille projekteille (esim. Java ladataan kerran) |
-| `devbox-nvim` | Lazy-pluginit ja mason-LSP:t |
-| `devbox-history` | zsh-historia |
+| `devbox-mise` | project tools, shared by all projects (e.g. Java is downloaded once) |
+| `devbox-nvim` | Lazy plugins and mason LSPs |
+| `devbox-history` | zsh history |
 
-Perustyökalut ovat imagessa järjestelmätasolla (`/usr/local/share/mise`), joten volume ei peitä niitä, ja uusi image tuo aina uudet perustyökalut.
+The base tools live system-wide in the image (`/usr/local/share/mise`), so the volume never hides them and a new image always brings new base tools.
 
-### Image rakennetaan paikallisesti
-Imagea ei julkaista mihinkään rekisteriin. Jokainen kone rakentaa sen itse dotfiles-checkoutista `~/.local/share/chezmoi` nimellä `localhost/devbox:latest`:
-- **Bootstrap** (`install.sh`) rakentaa imagen, jos konttimoottori on jo käytettävissä.
-- **`devbox`** rakentaa imagen automaattisesti, jos sitä ei vielä ole.
-- **`chezmoi update`** rakentaa imagen uudelleen, jos imageen päätyvät tiedostot (`home/`, `container/`, `install.sh`) muuttuivat.
-- **`devbox build --pull`** rakentaa sen käsin. Aja se esimerkiksi silloin, kun haluat perustyökaluista uusimmat versiot.
+### The image is built locally
+The image is not published to any registry. Each machine builds it from its dotfiles checkout `~/.local/share/chezmoi` as `localhost/devbox:latest`:
+- **Bootstrap** (`install.sh`) builds the image if the container engine is already usable.
+- **`devbox`** builds the image automatically if it does not exist yet.
+- **`chezmoi update`** rebuilds the image when the files that go into it (`home/`, `container/`, `packages/`, `install.sh`) have changed.
+- **`devbox build --pull`** builds it manually. Run it, for example, when you want the latest versions of the base tools.
 
-Paikallisesti muokatut, vielä pushaamattomat dotfilet tulevat mukaan heti, kun ajat `devbox build`.
+Local, not yet pushed dotfiles changes are included as soon as you run `devbox build`.
 
-Git-identiteetti välitetään hostilta. SSH-agentti välitetään Linuxilla/WSL:ssä ja macOSilla Dockerin/OrbStackin kanssa.
+The git identity is passed in from the host. The SSH agent is forwarded on Linux/WSL, and on macOS with Docker/OrbStack.
 
 ### VS Code / JetBrains (Dev Containers)
-Kopioi `container/devcontainer/devcontainer.json` projektin `.devcontainer/`-hakemistoon. Se käyttää samaa paikallista imagea (`localhost/devbox:latest`; aja `devbox build`, jos sitä ei vielä ole) ja samoja volumeja, ja `postCreateCommand` asentaa projektin `mise.toml`:n työkalut. Podmanin kanssa VS Code tarvitsee asetuksen `"dev.containers.dockerPath": "podman"`.
+Copy `container/devcontainer/devcontainer.json` to the project's `.devcontainer/` directory. It uses the same local image (`localhost/devbox:latest`; run `devbox build` if it does not exist yet) and the same volumes, and `postCreateCommand` installs the tools from the project's `mise.toml`. With Podman, VS Code needs the setting `"dev.containers.dockerPath": "podman"`.
 
-## Konttimoottori: Podman vai Docker
+## Container engine: Podman or Docker
 
-Moottori valitaan `chezmoi init`:ssä, ja `devbox` käyttää sitä automaattisesti (`DEVBOX_ENGINE=docker devbox` vaihtaa kertaluonteisesti).
+The engine is chosen in `chezmoi init`, and `devbox` uses it automatically (`DEVBOX_ENGINE=docker devbox` switches for a single run).
 
-| | Podman (oletus) | Docker |
+| | Podman (default) | Docker |
 |---|---|---|
-| macOS | `podman` + Podman Desktop, VM `podman machine`:lla | OrbStack |
-| WSL / Linux | apt `podman`, rootless, ei daemonia | Docker Engine (get.docker.com) |
-| Tiedostojen omistajuus `/workspace`:ssa | säilyy (`--userns=keep-id`) | kontin `dev` = uid 1000, toimii kun host-käyttäjäkin on 1000 (WSL:n oletus) |
-| SSH-agentti macOSilla | ei välity: käytä HTTPS + `gh auth login` kontissa | välittyy |
-| Docker-API (Testcontainers, compose) | `DOCKER_HOST` asetetaan Podmanin socketiin, `docker` on alias `podman`ille | natiivi |
+| macOS | `podman` + Podman Desktop, VM via `podman machine` | OrbStack |
+| WSL / Linux | apt `podman`, rootless, no daemon | Docker Engine (get.docker.com) |
+| File ownership in `/workspace` | preserved (`--userns=keep-id`) | the container's `dev` is uid 1000; works when the host user is also 1000 (the WSL default) |
+| SSH agent on macOS | not forwarded: use HTTPS + `gh auth login` in the container | forwarded |
+| Docker API (Testcontainers, compose) | `DOCKER_HOST` points to Podman's socket, `docker` is an alias for `podman`, `docker-compose` (via mise) serves `podman compose` | native |
 
-**Docker Sandboxes** (`sbx`) on standalone, eikä se tarvitse Docker Desktopia eikä Docker Engineä, koska se ajaa sandboxit omissa microVM:issään. Siksi se toimii Podmanin rinnalla.
+**Docker Sandboxes** (`sbx`) is standalone and needs neither Docker Desktop nor Docker Engine, because it runs sandboxes in its own microVMs. It therefore works alongside Podman.
 
 ## Neovim
 
-- **Asennus:** mise asentaa sen perustyökaluna (`neovim` tiedostossa `home/dot_config/mise/config.toml`).
-- **Config:** ei ole tässä repossa, vaan omassa repossaan [`trinne/nvim`](https://github.com/trinne/nvim). chezmoi kloonaa sen hakemistoon `~/.config/nvim` (`home/.chezmoiexternal.toml.tmpl`) ja päivittää sen `chezmoi update`:lla viikon välein.
-- **Muokkaus:** `~/.config/nvim` on tavallinen git-repo. Muokkaa siellä, commitoi ja pushaa `trinne/nvim`:iin.
-- **Pluginit ja LSP:t:** Lazy ja mason asentavat ne ensimmäisellä käynnistyksellä. Kontissa ne tallentuvat `devbox-nvim`-volumeen.
-- **Huom:** masonin npm-pohjaiset palvelimet (ts_ls, eslint, prettier…) tarvitsevat Noden. Hostilla Nodea ei ole, ellei `node`-toolsetia ole valittu.
+- **Installation:** mise installs it as a base tool (`neovim` in `home/dot_config/mise/config.toml`).
+- **Config:** not in this repo but in its own repo, [`trinne/nvim`](https://github.com/trinne/nvim). chezmoi clones it to `~/.config/nvim` (`home/.chezmoiexternal.toml.tmpl`) and `chezmoi update` refreshes it weekly.
+- **Editing:** `~/.config/nvim` is a regular git repo. Edit it there, commit and push to `trinne/nvim`.
+- **Plugins and LSPs:** Lazy and mason install them on first start. In the container they are stored in the `devbox-nvim` volume.
+- **Note:** mason's npm-based servers (ts_ls, eslint, prettier…) need Node. The host has no Node unless the `node` toolset is selected.
 
-## Päivittäinen käyttö
+## Everyday use
 
-| Mitä | Komento |
+| What | Command |
 |---|---|
-| Muokkaa tiedostoa | `chezmoi edit ~/.zshrc` (tai muokkaa repossa ja `chezmoi apply`) |
-| Hae ja aja muutokset | `chezmoi update` |
-| Näytä erot | `chezmoi diff` |
-| Muuta toolset- tai moottorivalintaa | `chezmoi init --prompt && chezmoi apply` |
-| Päivitä työkalut | `mise upgrade` |
-| Poista käyttämättömät työkaluversiot | `mise prune` |
+| Edit a file | `chezmoi edit ~/.zshrc` (or edit in the repo and `chezmoi apply`) |
+| Pull and apply changes | `chezmoi update` |
+| Show the differences | `chezmoi diff` |
+| Change the toolset or engine choice | `chezmoi init --prompt && chezmoi apply` |
+| Upgrade tools | `mise upgrade` |
+| Remove unused tool versions | `mise prune` |
 
-Koneelle omat, ei-versioidut asetukset: `~/.config/zsh/local.zsh.local` ja `~/.config/git/local`.
+Machine-specific, unversioned settings: `~/.config/zsh/local.zsh.local` and `~/.config/git/local`.
 
-## Rakenne
+## Layout
 
 ```
 install.sh                    bootstrap (mise → chezmoi init --apply)
-home/                         chezmoi-lähde (.chezmoiroot)
-  .chezmoi.toml.tmpl          ympäristön tunnistus, git-identiteetti, toolset- ja moottorivalinta
-  .chezmoidata/toolsets.toml  toolset-määrittelyt
-  .chezmoiexternal.toml.tmpl  zsh-pluginit, tpm, nvim-config (trinne/nvim), alacritty-teemat
-  .chezmoiscripts/            paketit, brew bundle, mise install, chsh, konttimoottori, macOS-asetukset
-  dot_local/bin/              devbox, devbox-init (kontin entrypoint), toolset
-  dot_zshrc.tmpl, dot_zshenv, dot_config/...
-container/Dockerfile          devbox-image
-container/devcontainer/       devcontainer.json-malli
-.github/workflows/test.yml    testit (kontti, Linux-host, macOS, devbox-build × podman/docker), myös viikoittain
+packages/apt.txt              Debian/Ubuntu packages for hosts and the image
+home/                         chezmoi source (.chezmoiroot)
+  .chezmoi.toml.tmpl          environment detection, git identity, toolset and engine choice
+  .chezmoidata/toolsets.toml  toolset definitions
+  .chezmoiexternal.toml.tmpl  zsh plugins, tpm, nvim config (trinne/nvim), alacritty themes
+  .chezmoiscripts/            packages, brew bundle, mise install, chsh, container engine, macOS defaults, image build
+  .chezmoitemplates/          shell snippets shared by the scripts
+  dot_local/bin/              devbox, devbox-init (container entrypoint), toolset
+  dot_zshenv.tmpl, dot_zprofile.tmpl, dot_zshrc.tmpl, dot_config/...
+container/Dockerfile          devbox image
+container/devcontainer/       devcontainer.json template
+.github/workflows/test.yml    tests (container, Linux host, macOS, devbox build × podman/docker), also weekly
 ```
 
-Imagen voi rakentaa myös toisesta checkoutista, esimerkiksi tätä repoa kehittäessä:
+The image can also be built from another checkout, e.g. while developing this repo:
 ```sh
 DEVBOX_SOURCE=~/projects/dotfiles devbox build
 ```

@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 # Brewfile hash: {{ includeTemplate "dot_config/homebrew/Brewfile.tmpl" . | sha256sum }}
 set -euo pipefail
-eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
+{{ template "brew-env.sh" . }}
 {{- if .isCI }}
 echo "==> CI: skipping brew bundle"
 exit 0

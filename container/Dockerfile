@@ -12,14 +12,14 @@ ENV LANG=en_US.UTF-8 \
     DEVBOX=1 \
     SHELL=/bin/zsh
 
-# Same package set as home/.chezmoiscripts/run_onchange_before_10-install-packages.sh.tmpl,
-# installed here so it is cached in its own layer.
+# Same package list as the hosts (packages/apt.txt), copied alone so this layer
+# stays cached until the list itself changes.
+COPY packages/apt.txt /tmp/apt.txt
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      sudo zsh git curl ca-certificates unzip xz-utils build-essential tmux less \
-      locales openssh-client gnupg procps file \
+ && grep -v '^#' /tmp/apt.txt | xargs env DEBIAN_FRONTEND=noninteractive \
+      apt-get install -y --no-install-recommends sudo \
  && sed -i 's/^# *en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen && locale-gen \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* /tmp/apt.txt
 
 # Non-root user whose login shell is zsh (replaces chsh on hosts)
 RUN groupadd --gid "$USER_GID" "$USERNAME" \

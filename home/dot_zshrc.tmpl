@@ -1,14 +1,5 @@
 # ~/.zshrc - interactive shell. Managed by chezmoi: edit with `chezmoi edit ~/.zshrc`.
 
-# --- Homebrew (macOS) ---------------------------------------------------------
-{{- if .isMac }}
-if [[ -x /opt/homebrew/bin/brew ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-elif [[ -x /usr/local/bin/brew ]]; then
-  eval "$(/usr/local/bin/brew shellenv)"
-fi
-{{- end }}
-
 # --- History ------------------------------------------------------------------
 HISTFILE="$XDG_STATE_HOME/zsh/history"
 [[ -d "${HISTFILE:h}" ]] || mkdir -p "${HISTFILE:h}"
@@ -21,10 +12,9 @@ setopt AUTO_CD AUTO_PUSHD PUSHD_IGNORE_DUPS PUSHD_SILENT INTERACTIVE_COMMENTS NO
 bindkey -e
 WORDCHARS=${WORDCHARS//[\/]}
 
-# --- mise (languages + CLI tools) ---------------------------------------------
+# --- mise (base tools, toolsets, project tools) -------------------------------
 if command -v mise >/dev/null; then
-  eval "$(mise activate zsh)"
-  eval "$(mise hook-env -s zsh)"   # make tools available before the first prompt
+  eval "$(mise activate zsh)"   # also runs the hook once, so tools work before the first prompt
 fi
 
 # --- Completion ---------------------------------------------------------------

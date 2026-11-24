@@ -1,0 +1,17 @@
+# Debian/Ubuntu packages for hosts (WSL/Linux) and the devbox image.
+# Single source of truth: read by container/Dockerfile and
+# home/.chezmoiscripts/run_onchange_before_10-install-packages.sh.tmpl
+zsh
+git
+curl
+ca-certificates
+unzip
+xz-utils
+build-essential
+tmux
+less
+locales
+openssh-client
+gnupg
+procps
+file

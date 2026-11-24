@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 # Podman on macOS runs containers in a small Linux VM ("podman machine").
 set -euo pipefail
-eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
+{{ template "brew-env.sh" . }}
 if ! podman machine inspect >/dev/null 2>&1; then
   echo "==> podman machine init"
   podman machine init

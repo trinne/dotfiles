@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 # devbox-init - entrypoint of the devbox image.
-# Installs the project's own tools (mise.toml / .tool-versions in the working
-# directory) into the persistent mise volume, then runs the command through mise.
+# Installs the project's tools (mise.toml / .tool-versions in the working directory)
+# into the persistent mise volume if any are missing, then runs the command via mise.
 set -uo pipefail
 
-if [[ -f mise.toml || -f .mise.toml || -f .tool-versions || -f mise/config.toml || -f .config/mise.toml ]]; then
-  mise trust --all --quiet 2>/dev/null || true
-  if [[ -n "$(mise ls --missing --quiet 2>/dev/null)" ]] && ! mise install --yes; then
-    echo "devbox-init: 'mise install' failed; continuing without the missing tools" >&2
-  fi
+mise trust --all --quiet 2>/dev/null || true
+if [[ -n "$(mise ls --missing --quiet 2>/dev/null)" ]] && ! mise install --yes; then
+  echo "devbox-init: 'mise install' failed; continuing without the missing tools" >&2
 fi
 
 (( $# )) || set -- zsh -l

@@ -1,11 +1,11 @@
 {{ if and (not .isContainer) (not .isCI) -}}
 #!/usr/bin/env bash
 # Build the devbox image locally whenever the files it is made of change.
-# Inputs checksum: {{ output "sh" "-c" (printf "cd %q && find home container install.sh -type f | LC_ALL=C sort | xargs cat | cksum" .chezmoi.workingTree) | trim }}
+# Inputs checksum: {{ output "sh" "-c" (printf "cd %q && find home container packages install.sh -type f | LC_ALL=C sort | xargs cat | cksum" .chezmoi.workingTree) | trim }}
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 {{- if .isMac }}
-eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
+{{ template "brew-env.sh" . }}
 {{- end }}
 
 engine="{{ .containerEngine }}"
