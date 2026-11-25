@@ -1,0 +1,33 @@
+{{ if and .isDesktop (eq .chezmoi.os "linux") (not .isWSL) -}}
+#!/usr/bin/env bash
+# Linux desktop: font cache and GUI apps (packages/snap.txt). Alacritty's config is a
+# regular chezmoi file (.config/alacritty/alacritty.toml).
+set -euo pipefail
+
+if command -v fc-cache >/dev/null; then
+  echo "==> fc-cache (Meslo Nerd Font)"
+  fc-cache -f "$HOME/.local/share/fonts" >/dev/null
+fi
+{{- if .isCI }}
+echo "==> CI: skipping snap installs"
+exit 0
+{{- end }}
+
+if ! command -v snap >/dev/null; then
+  echo "!! snap not available: install the GUI apps from packages/snap.txt manually" >&2
+  exit 0
+fi
+while read -r app flags; do
+  if ! snap list "$app" >/dev/null 2>&1; then
+    echo "==> snap install $app $flags"
+    # shellcheck disable=SC2086 # flags are intentionally word-split
+    sudo snap install "$app" $flags || echo "!! snap install $app failed" >&2
+  fi
+done <<'APPS'
+{{- range include (joinPath .chezmoi.workingTree "packages/snap.txt") | splitList "\n" }}
+{{- $l := trim . }}{{ if and $l (not (hasPrefix "#" $l)) }}
+{{ $l }}
+{{- end }}
+{{- end }}
+APPS
+{{ end -}}

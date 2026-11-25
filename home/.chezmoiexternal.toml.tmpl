@@ -26,9 +26,21 @@
     [".config/nvim".pull]
         args = ["--ff-only"]
 
-{{ if .isMac -}}
-[".config/alacritty/themes"]
-    type = "git-repo"
-    url = "https://github.com/alacritty/alacritty-theme.git"
+# bat/delta syntax themes for the color themes in .chezmoidata/themes.toml (Nord is built in)
+[".config/bat/themes/tokyonight_storm.tmTheme"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/folke/tokyonight.nvim/main/extras/sublime/tokyonight_storm.tmTheme"
     refreshPeriod = "168h"
-{{- end }}
+
+[".config/bat/themes/Catppuccin Mocha.tmTheme"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/catppuccin/bat/main/themes/Catppuccin%20Mocha.tmTheme"
+    refreshPeriod = "168h"
+
+# Terminal font on Linux desktops and WSL (installed into Windows from here); macOS uses the Brewfile cask
+[".local/share/fonts/MesloNerdFont"]
+    type = "archive"
+    url = "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Meslo.tar.xz"
+    exact = true
+    include = ["MesloLGSNerdFontMono-*.ttf"]
+    refreshPeriod = "720h"

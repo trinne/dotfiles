@@ -20,6 +20,8 @@ Installs the Xcode Command Line Tools (if they are missing, run the command agai
 | Git `user.name` / `user.email` | – |
 | Toolsets to install globally on the host | none |
 | Container engine (`podman` / `docker`) | `podman` |
+| Color theme (`tokyonight-storm` / `nord` / `catppuccin-mocha`) | `tokyonight-storm` |
+| Desktop machine? (plain Linux only) | yes if a graphical session is running |
 
 The answers are stored in `~/.config/chezmoi/chezmoi.toml`. Change them later with `chezmoi init --prompt && chezmoi apply`.
 
@@ -27,7 +29,15 @@ The answers are stored in `~/.config/chezmoi/chezmoi.toml`. Change them later wi
 1. In PowerShell: `wsl --install -d Ubuntu`
 2. In Ubuntu, run the same command as above.
 
-Installs the base apt packages, the selected container engine directly inside WSL (Podman or Docker Engine, no Docker Desktop) and the base tools. Finally run `wsl --shutdown` so that the default shell and group memberships take effect. If the devbox image build was skipped because the engine was not usable yet (e.g. the Docker group membership), the image is built on the first `devbox` run.
+Installs the base apt packages, the selected container engine directly inside WSL (Podman or Docker Engine, no Docker Desktop) and the base tools. On the Windows side it installs the terminal font, Alacritty (winget) with its config, and a Windows Terminal profile `<distro> (dotfiles)` with the color schemes (see [Fonts and terminal](#fonts-and-terminal)). Finally run `wsl --shutdown` so that the default shell and group memberships take effect. If the devbox image build was skipped because the engine was not usable yet (e.g. the Docker group membership), the image is built on the first `devbox` run.
+
+### Linux (Ubuntu)
+The same command as above. It works like WSL without the Windows parts: apt packages, the container engine and the base tools.
+
+- **Desktop:** also installs the terminal font, Alacritty and the GUI apps from `packages/snap.txt` (VS Code, IntelliJ IDEA, Vivaldi, Spotify, 1Password) via snap.
+- **Server / headless:** command-line tools only.
+
+chezmoi asks which one the machine is (the default comes from whether a graphical session is running). Override it with `DOTFILES_DESKTOP=1` or `DOTFILES_DESKTOP=0`.
 
 ## What is installed where
 
@@ -47,6 +57,30 @@ toolset list               # show the available toolsets
 toolset add node clojure   # writes ./mise.toml and installs the tools
 ```
 `toolset add` is a shortcut for `mise use`. Edit versions directly in `mise.toml`, or add any other tool with `mise use <tool>@<version>`.
+
+## Themes
+
+Three color themes are installed: **Tokyo Night Storm** (default), **Nord** and **Catppuccin Mocha**. One theme is active everywhere: Alacritty, Windows Terminal, tmux, fzf, starship, k9s and bat/delta, both on the host and in the devbox image.
+```sh
+theme                      # show the active theme
+theme list                 # list the themes
+theme set nord             # switch: regenerates the configs, reloads tmux, rebuilds the devbox image
+```
+- The palettes are defined once in `home/.chezmoidata/themes.toml`, and every themed config is generated from them. To add a theme, add its palette there and its name to the choice list in `home/.chezmoi.toml.tmpl`.
+- Most CLI tools (eza, lazygit, git) use the terminal's 16 colors, so they follow the theme automatically.
+- **Neovim** sets its colorscheme in its own repo. The active theme is exported as `$COLOR_THEME`, so the nvim config can read it.
+
+## Fonts and terminal
+
+The terminal is **Alacritty** with **MesloLGS Nerd Font Mono** on every desktop:
+
+| | Font | Alacritty | Config |
+|---|---|---|---|
+| macOS | Brewfile cask | Brewfile cask | `~/.config/alacritty/alacritty.toml` |
+| Linux desktop | downloaded to `~/.local/share/fonts` | snap | `~/.config/alacritty/alacritty.toml` |
+| WSL | installed for the Windows user | winget | generated in `~/.config/dotfiles-windows/`, copied to `%APPDATA%\alacritty\` |
+
+On WSL, Alacritty opens straight into the WSL distribution. Windows Terminal also gets a `<distro> (dotfiles)` profile with the same font and theme; set it as the default profile in Windows Terminal's settings if you use it.
 
 ## Developing in a container
 
@@ -111,7 +145,8 @@ The engine is chosen in `chezmoi init`, and `devbox` uses it automatically (`DEV
 | Edit a file | `chezmoi edit ~/.zshrc` (or edit in the repo and `chezmoi apply`) |
 | Pull and apply changes | `chezmoi update` |
 | Show the differences | `chezmoi diff` |
-| Change the toolset or engine choice | `chezmoi init --prompt && chezmoi apply` |
+| Change the theme | `theme set <name>` |
+| Change the toolset, engine or desktop choice | `chezmoi init --prompt && chezmoi apply` |
 | Upgrade tools | `mise upgrade` |
 | Remove unused tool versions | `mise prune` |
 
@@ -122,17 +157,20 @@ Machine-specific, unversioned settings: `~/.config/zsh/local.zsh.local` and `~/.
 ```
 install.sh                    bootstrap (mise → chezmoi init --apply)
 packages/apt.txt              Debian/Ubuntu packages for hosts and the image
+packages/snap.txt             GUI apps for Linux desktops
 home/                         chezmoi source (.chezmoiroot)
   .chezmoi.toml.tmpl          environment detection, git identity, toolset and engine choice
   .chezmoidata/toolsets.toml  toolset definitions
-  .chezmoiexternal.toml.tmpl  zsh plugins, tpm, nvim config (trinne/nvim), alacritty themes
-  .chezmoiscripts/            packages, brew bundle, mise install, chsh, container engine, macOS defaults, image build
+  .chezmoidata/themes.toml    color theme palettes
+  .chezmoiexternal.toml.tmpl  zsh plugins, tpm, nvim config (trinne/nvim), bat themes, Meslo Nerd Font
+  .chezmoiscripts/            packages, brew bundle, mise install, chsh, container engine, desktop
+                              (Linux apps, Windows side), macOS defaults, image build
   .chezmoitemplates/          shell snippets shared by the scripts
-  dot_local/bin/              devbox, devbox-init (container entrypoint), toolset
+  dot_local/bin/              devbox, devbox-init (container entrypoint), toolset, theme
   dot_zshenv.tmpl, dot_zprofile.tmpl, dot_zshrc.tmpl, dot_config/...
 container/Dockerfile          devbox image
 container/devcontainer/       devcontainer.json template
-.github/workflows/test.yml    tests (container, Linux host, macOS, devbox build × podman/docker), also weekly
+.github/workflows/test.yml    tests (container, Linux host and desktop, macOS, devbox build × podman/docker), also weekly
 ```
 
 The image can also be built from another checkout, e.g. while developing this repo:

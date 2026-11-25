@@ -1,8 +1,19 @@
 README.md
 
 {{ if not .isMac }}
-.config/alacritty
 .config/homebrew
+{{ end }}
+
+{{/* Desktop bits: Alacritty config on macOS / Linux desktops; on WSL the terminal runs on
+     Windows, so its files are generated under .config/dotfiles-windows and copied over. */}}
+{{ if not (and .isDesktop (not .isWSL)) }}
+.config/alacritty
+{{ end }}
+{{ if not (and .isDesktop .isWSL) }}
+.config/dotfiles-windows
+{{ end }}
+{{ if not (and .isDesktop (eq .chezmoi.os "linux")) }}
+.local/share/fonts/MesloNerdFont
 {{ end }}
 
 {{ if .isContainer }}

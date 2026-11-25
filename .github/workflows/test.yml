@@ -69,6 +69,27 @@ jobs:
           test -e "$HOME/.config/k9s/config.yaml"
           test ! -e "$HOME/.lein"
 
+  # Linux desktop: font, Alacritty config, themes and switching (snap installs are skipped on CI)
+  linux-desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bootstrap as a desktop with the Nord theme
+        run: DOTFILES_DESKTOP=1 DOTFILES_THEME=nord DOTFILES_SOURCE="$GITHUB_WORKSPACE" sh ./install.sh
+      - name: Font, terminal and theme are in place
+        run: |
+          fc-list | grep -q "MesloLGS Nerd Font Mono"
+          grep -q '^background = "#2e3440"' ~/.config/alacritty/alacritty.toml
+          zsh -lc 'bat --list-themes | grep -qx tokyonight_storm && bat --list-themes | grep -qx "Catppuccin Mocha"'
+      - name: theme set switches every themed file
+        run: |
+          zsh -lc 'theme set catppuccin-mocha'
+          test "$(zsh -lc theme)" = catppuccin-mocha
+          grep -q '#1e1e2e' ~/.config/alacritty/alacritty.toml
+          grep -q '#181825' ~/.config/tmux/tmux.conf
+          grep -q 'Catppuccin Mocha' ~/.config/git/config
+          zsh -lc 'test -z "$(chezmoi diff)"'
+
   macos:
     runs-on: macos-latest
     steps:

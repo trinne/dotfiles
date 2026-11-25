@@ -19,8 +19,10 @@ packages=(
 {{- range include (joinPath .chezmoi.workingTree "packages/apt.txt") | splitList "\n" }}
 {{- $p := trim . }}{{ if and $p (not (hasPrefix "#" $p)) }} {{ $p }}{{ end }}
 {{- end }}
-{{- if .isWSL }} wslu{{ end }}   # wslu: wslview opens URLs in the Windows browser
+{{- if .isWSL }} wslu{{ end }}
+{{- if and .isDesktop (not .isWSL) }} fontconfig{{ end }}
 )
+# wslu (WSL): wslview opens URLs in the Windows browser. fontconfig (Linux desktop): fc-cache for the terminal font.
 
 if command -v apt-get >/dev/null; then
   missing=()

@@ -1,4 +1,6 @@
 # tmux config, ported from the old dotfiles.
+{{- $t := index .themes .theme }}
+{{- $c := $t.colors }}
 
 # True colour + undercurl in modern terminals
 set -g default-terminal "tmux-256color"
@@ -13,7 +15,6 @@ unbind C-b
 set -g prefix C-Space
 bind C-Space send-prefix
 
-set -g status-style 'bg=#333333 fg=#5eacd3'
 bind r source-file ~/.config/tmux/tmux.conf \; display "tmux.conf reloaded"
 
 set -g base-index 1
@@ -46,6 +47,17 @@ bind -r k select-pane -U
 bind -r j select-pane -D
 bind -r h select-pane -L
 bind -r l select-pane -R
+
+# Theme: {{ $t.title }} (generated; change with `theme set <name>`)
+set -g status-style "bg={{ $c.bg_alt }},fg={{ $c.fg }}"
+set -g status-left-style "fg={{ $c.accent }},bold"
+set -g status-right-style "fg={{ $c.fg_dim }}"
+setw -g window-status-style "fg={{ $c.fg_dim }}"
+setw -g window-status-current-style "fg={{ $c.accent }},bold"
+set -g pane-border-style "fg={{ $c.bg_sel }}"
+set -g pane-active-border-style "fg={{ $c.accent }}"
+set -g message-style "bg={{ $c.bg_sel }},fg={{ $c.fg }}"
+set -g mode-style "bg={{ $c.bg_sel }},fg={{ $c.fg }}"
 
 # Plugins (tpm is installed by chezmoi; press prefix + I once to install the rest)
 set -g @plugin 'tmux-plugins/tpm'

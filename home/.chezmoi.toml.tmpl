@@ -50,12 +50,49 @@
 {{-   fail (printf "containerEngine must be podman or docker, got %q" $engine) -}}
 {{- end -}}
 
+{{- /* Color theme (keep in sync with .chezmoidata/themes.toml). Switch later with `theme set <name>`. */ -}}
+{{- $themes := list "tokyonight-storm" "nord" "catppuccin-mocha" -}}
+{{- $theme := env "DOTFILES_THEME" -}}
+{{- if not $theme -}}
+{{-   if $interactive -}}
+{{-     $theme = promptChoiceOnce . "theme" "Color theme" $themes "tokyonight-storm" -}}
+{{-   else -}}
+{{-     $theme = get . "theme" | default "tokyonight-storm" -}}
+{{-   end -}}
+{{- end -}}
+{{- if not (has $theme $themes) -}}
+{{-   fail (printf "theme must be one of %s, got %q" ($themes | join ", ") $theme) -}}
+{{- end -}}
+
+{{- /* Desktop: GUI apps, fonts and the terminal emulator. macOS and WSL (Windows side) always;
+       plain Linux asks, defaulting to whether a graphical session is running. */ -}}
+{{- $isDesktop := or $isMac $isWSL -}}
+{{- if env "DOTFILES_DESKTOP" -}}
+{{-   $isDesktop = eq (env "DOTFILES_DESKTOP") "1" -}}
+{{- else if or $isContainer $isCI -}}
+{{-   $isDesktop = false -}}
+{{- else if and (eq .chezmoi.os "linux") (not $isWSL) -}}
+{{-   $hasGUI := ne (or (env "XDG_CURRENT_DESKTOP") (env "WAYLAND_DISPLAY") (env "DISPLAY")) "" -}}
+{{-   if $interactive -}}
+{{-     $isDesktop = promptBoolOnce . "isDesktop" "Desktop machine (GUI apps, fonts, Alacritty)" $hasGUI -}}
+{{-   else if hasKey . "isDesktop" -}}
+{{-     $isDesktop = get . "isDesktop" -}}   {{- /* not `default`: it would treat a stored false as unset */ -}}
+{{-   else -}}
+{{-     $isDesktop = $hasGUI -}}
+{{-   end -}}
+{{- end -}}
+
+# Remember where the dotfiles live, also when installed from a local checkout (DOTFILES_SOURCE)
+sourceDir = {{ .chezmoi.workingTree | quote }}
+
 [data]
     name = {{ $name | quote }}
     email = {{ $email | quote }}
     hostToolsetsSpec = {{ $toolsetsSpec | quote }}
     hostToolsets = {{ $hostToolsets | toJson }}
     containerEngine = {{ $engine | quote }}
+    theme = {{ $theme | quote }}
+    isDesktop = {{ $isDesktop }}
     isMac = {{ $isMac }}
     isWSL = {{ $isWSL }}
     isContainer = {{ $isContainer }}

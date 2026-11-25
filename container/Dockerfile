@@ -34,6 +34,9 @@ WORKDIR /home/$USERNAME
 
 COPY --chown=$USERNAME:$USERNAME . /home/$USERNAME/.local/share/chezmoi
 
+# Color theme of the host that builds the image (`devbox build` passes it)
+ARG DOTFILES_THEME=tokyonight-storm
+
 # Optional build secret avoids GitHub API rate limits while mise downloads tools:
 #   docker build --secret id=github_token,env=GITHUB_TOKEN ...
 RUN --mount=type=secret,id=github_token,uid=${USER_UID} \

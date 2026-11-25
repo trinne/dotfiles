@@ -1,4 +1,8 @@
+{{- $t := index .themes .theme -}}
+{{- $c := $t.colors -}}
 "$schema" = "https://starship.rs/config-schema.json"
+# Theme: {{ $t.title }} (generated; change with `theme set <name>`)
+palette = "dotfiles"
 
 add_newline = false
 command_timeout = 1000
@@ -9,14 +13,14 @@ $nodejs$python$java$clojure$cmd_duration
 $character"""
 
 [character]
-success_symbol = "[❯](bold green)"
+success_symbol = "[❯](bold accent)"
 error_symbol = "[❯](bold red)"
-vimcmd_symbol = "[❮](bold green)"
+vimcmd_symbol = "[❮](bold accent_alt)"
 
 [directory]
 truncation_length = 4
 truncate_to_repo = true
-style = "bold cyan"
+style = "bold accent"
 
 [hostname]
 ssh_only = true
@@ -27,6 +31,7 @@ format = "[⬢ $name]($style) "
 
 [git_branch]
 format = "[$symbol$branch]($style) "
+style = "bold accent_alt"
 
 [git_status]
 format = "([$all_status$ahead_behind]($style) )"
@@ -37,6 +42,7 @@ format = "[⎈ $context(/$namespace)]($style) "
 
 [cmd_duration]
 min_time = 2000
+style = "muted"
 format = "[took $duration]($style) "
 
 [nodejs]
@@ -47,3 +53,12 @@ format = "[$symbol$pyenv_prefix($version)( \\($virtualenv\\))]($style) "
 
 [java]
 format = "[$symbol($version)]($style) "
+
+[palettes.dotfiles]
+accent = "{{ $c.accent }}"
+accent_alt = "{{ $c.accent_alt }}"
+muted = "{{ $c.fg_dim }}"
+{{- range $name := list "black" "red" "green" "yellow" "blue" "cyan" "white" }}
+{{ $name }} = "{{ index $c.normal $name }}"
+{{- end }}
+purple = "{{ $c.normal.magenta }}"

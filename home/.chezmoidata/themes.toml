@@ -1,0 +1,100 @@
+# Color themes. The active one is chosen with `theme set <name>` (data: theme) and every
+# themed tool is generated from its palette: Alacritty, Windows Terminal, tmux, fzf,
+# starship, k9s, bat/delta. Keep the names in sync with the choice list in .chezmoi.toml.tmpl.
+#
+# Palette keys:
+#   bg / bg_alt / bg_sel   background, darker panels (status bars), selection
+#   fg / fg_dim            text, comments and inactive elements
+#   accent / accent_alt    primary and secondary highlight
+#   normal.* / bright.*    the 16 terminal ANSI colors
+#   bat                    bat/delta syntax theme (file in ~/.config/bat/themes or built in)
+
+[themes.tokyonight-storm]
+title = "Tokyo Night Storm"
+bat = "tokyonight_storm"
+[themes.tokyonight-storm.colors]
+bg = "#24283b"
+bg_alt = "#1f2335"
+bg_sel = "#364a82"
+fg = "#c0caf5"
+fg_dim = "#565f89"
+accent = "#7aa2f7"
+accent_alt = "#bb9af7"
+[themes.tokyonight-storm.colors.normal]
+black = "#1d202f"
+red = "#f7768e"
+green = "#9ece6a"
+yellow = "#e0af68"
+blue = "#7aa2f7"
+magenta = "#bb9af7"
+cyan = "#7dcfff"
+white = "#a9b1d6"
+[themes.tokyonight-storm.colors.bright]
+black = "#414868"
+red = "#f7768e"
+green = "#9ece6a"
+yellow = "#e0af68"
+blue = "#7aa2f7"
+magenta = "#bb9af7"
+cyan = "#7dcfff"
+white = "#c0caf5"
+
+[themes.nord]
+title = "Nord"
+bat = "Nord"
+[themes.nord.colors]
+bg = "#2e3440"
+bg_alt = "#3b4252"
+bg_sel = "#434c5e"
+fg = "#d8dee9"
+fg_dim = "#616e88"
+accent = "#88c0d0"
+accent_alt = "#81a1c1"
+[themes.nord.colors.normal]
+black = "#3b4252"
+red = "#bf616a"
+green = "#a3be8c"
+yellow = "#ebcb8b"
+blue = "#81a1c1"
+magenta = "#b48ead"
+cyan = "#88c0d0"
+white = "#e5e9f0"
+[themes.nord.colors.bright]
+black = "#4c566a"
+red = "#bf616a"
+green = "#a3be8c"
+yellow = "#ebcb8b"
+blue = "#81a1c1"
+magenta = "#b48ead"
+cyan = "#8fbcbb"
+white = "#eceff4"
+
+[themes.catppuccin-mocha]
+title = "Catppuccin Mocha"
+bat = "Catppuccin Mocha"
+[themes.catppuccin-mocha.colors]
+bg = "#1e1e2e"
+bg_alt = "#181825"
+bg_sel = "#45475a"
+fg = "#cdd6f4"
+fg_dim = "#6c7086"
+accent = "#89b4fa"
+accent_alt = "#cba6f7"
+[themes.catppuccin-mocha.colors.normal]
+black = "#45475a"
+red = "#f38ba8"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+blue = "#89b4fa"
+magenta = "#f5c2e7"
+cyan = "#94e2d5"
+white = "#bac2de"
+[themes.catppuccin-mocha.colors.bright]
+black = "#585b70"
+red = "#f38ba8"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+blue = "#89b4fa"
+magenta = "#f5c2e7"
+cyan = "#94e2d5"
+white = "#a6adc8"

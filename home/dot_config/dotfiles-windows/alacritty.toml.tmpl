@@ -1,0 +1,1 @@
+{{- template "alacritty.toml" (merge (dict "windows" true "wslDistro" (env "WSL_DISTRO_NAME" | default "Ubuntu")) .) -}}

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# theme - show or switch the color theme of every themed tool
+# (Alacritty, Windows Terminal, tmux, fzf, starship, k9s, bat/delta, devbox image).
+#
+#   theme              show the active theme
+#   theme list         list the available themes
+#   theme set <name>   switch: stores it in the chezmoi config and runs `chezmoi apply`
+#
+# Themes are defined in the dotfiles repo: home/.chezmoidata/themes.toml
+set -euo pipefail
+
+themes=({{ range $id := keys .themes | sortAlpha }} {{ $id }}{{ end }})
+current={{ .theme | quote }}
+config="${XDG_CONFIG_HOME:-$HOME/.config}/chezmoi/chezmoi.toml"
+
+case "${1:-}" in
+  "")
+    echo "$current"
+    ;;
+  list|ls)
+    for t in "${themes[@]}"; do
+      [[ "$t" == "$current" ]] && echo "* $t" || echo "  $t"
+    done
+    ;;
+  set)
+    name="${2:-}"
+    [[ " ${themes[*]} " == *" $name "* ]] || { echo "theme: unknown theme '$name' (see: theme list)" >&2; exit 1; }
+    sed -i.bak -E "s/^([[:space:]]*theme[[:space:]]*=[[:space:]]*).*/\1\"$name\"/" "$config"
+    rm -f "$config.bak"
+    chezmoi apply
+    if [[ -n "${TMUX:-}" ]]; then tmux source-file "$HOME/.config/tmux/tmux.conf"; fi
+    echo "==> Theme: $name. Open a new shell (exec zsh) for fzf/bat colors."
+    ;;
+  *)
+    echo "usage: theme [list | set <name>]" >&2
+    exit 2
+    ;;
+esac

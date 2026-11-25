@@ -1,0 +1,23 @@
+{{- /* Windows Terminal JSON fragment: all color schemes + a WSL profile using the active theme.
+       Copied to %LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\dotfiles\ on WSL desktops. */ -}}
+{{- $distro := env "WSL_DISTRO_NAME" | default "Ubuntu" -}}
+{{- $schemes := list -}}
+{{- range $id := keys .themes | sortAlpha -}}
+{{-   $t := index $.themes $id -}}
+{{-   $c := $t.colors -}}
+{{-   $s := dict "name" $t.title "background" $c.bg "foreground" $c.fg "cursorColor" $c.fg "selectionBackground" $c.bg_sel -}}
+{{-   range $name := list "black" "red" "green" "yellow" "blue" "magenta" "cyan" "white" -}}
+{{-     $key := ternary "purple" $name (eq $name "magenta") -}}
+{{-     $_ := set $s $key (index $c.normal $name) -}}
+{{-     $_ := set $s (printf "bright%s" (title $key)) (index $c.bright $name) -}}
+{{-   end -}}
+{{-   $schemes = append $schemes $s -}}
+{{- end -}}
+{{- $profile := dict
+      "guid" "{6f1c8a2e-3b4d-5e6f-8a9b-0c1d2e3f4a5b}"
+      "name" (printf "%s (dotfiles)" $distro)
+      "commandline" (printf "wsl.exe --distribution %s --cd ~" $distro)
+      "colorScheme" (index .themes .theme).title
+      "font" (dict "face" "MesloLGS Nerd Font Mono" "size" 12)
+      "opacity" 95 -}}
+{{- dict "profiles" (list $profile) "schemes" $schemes | toPrettyJson }}

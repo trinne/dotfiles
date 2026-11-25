@@ -44,6 +44,11 @@ build_image() {
   local build_args=(-f "$src/container/Dockerfile" -t "$image")
   [[ "${1:-}" == --pull ]] && build_args+=(--pull)
 
+  # Same color theme as the host
+  local theme
+  theme="$(chezmoi execute-template '{{ .theme }}' 2>/dev/null || true)"
+  [[ -n "$theme" ]] && build_args+=(--build-arg "DOTFILES_THEME=$theme")
+
   # Optional GitHub token avoids API rate limits while mise downloads tools
   local token="${GITHUB_TOKEN:-}"
   [[ -z "$token" ]] && command -v gh >/dev/null && token="$(gh auth token 2>/dev/null || true)"

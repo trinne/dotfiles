@@ -1,0 +1,52 @@
+{{ if and .isDesktop .isWSL -}}
+#!/usr/bin/env bash
+# WSL desktop: the terminal runs on Windows, so set up the Windows side from here:
+# Meslo Nerd Font (per-user, no admin), Alacritty (winget) + its config, and a
+# Windows Terminal fragment with all color schemes and a profile for this distro.
+# Inputs: theme {{ .theme }}, distro {{ env "WSL_DISTRO_NAME" }},
+#   {{ include ".chezmoidata/themes.toml" | sha256sum }}
+#   {{ include ".chezmoitemplates/alacritty.toml" | sha256sum }}
+#   {{ include "dot_config/dotfiles-windows/windows-terminal.json.tmpl" | sha256sum }}
+set -euo pipefail
+
+if ! command -v powershell.exe >/dev/null; then
+  echo "!! Windows interop not available (powershell.exe not found): skipping Windows-side setup" >&2
+  exit 0
+fi
+cd /mnt/c   # Windows executables warn when started from a \\wsl$ working directory
+
+ps() { powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$1" | tr -d '\r'; }
+appdata="$(wslpath "$(ps "[Environment]::GetFolderPath('ApplicationData')")")"
+localappdata="$(wslpath "$(ps "[Environment]::GetFolderPath('LocalApplicationData')")")"
+generated="$HOME/.config/dotfiles-windows"
+
+echo "==> Windows: Meslo Nerd Font"
+fonts_src="$(wslpath -w "$HOME/.local/share/fonts/MesloNerdFont")"
+# shellcheck disable=SC2016 # PowerShell variables, not bash
+ps_fonts='
+$dst = Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts"
+New-Item -ItemType Directory -Force -Path $dst | Out-Null
+$reg = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+Get-ChildItem -Path "__SRC__" -Filter "*.ttf" | ForEach-Object {
+  $target = Join-Path $dst $_.Name
+  if (-not (Test-Path $target)) { Copy-Item $_.FullName $target }
+  New-ItemProperty -Path $reg -Name ($_.BaseName + " (TrueType)") -Value $target -PropertyType String -Force | Out-Null
+}'
+ps "${ps_fonts//__SRC__/$fonts_src}"
+
+echo "==> Windows: Alacritty"
+if command -v winget.exe >/dev/null; then
+  winget.exe list --id Alacritty.Alacritty --exact >/dev/null 2>&1 \
+    || winget.exe install --id Alacritty.Alacritty --exact --silent --accept-package-agreements --accept-source-agreements \
+    || echo "!! winget install Alacritty failed" >&2
+else
+  echo "!! winget not found: install Alacritty manually" >&2
+fi
+mkdir -p "$appdata/alacritty"
+cp "$generated/alacritty.toml" "$appdata/alacritty/alacritty.toml"
+
+echo "==> Windows Terminal: color schemes + '${WSL_DISTRO_NAME:-Ubuntu} (dotfiles)' profile"
+fragments="$localappdata/Microsoft/Windows Terminal/Fragments/dotfiles"
+mkdir -p "$fragments"
+cp "$generated/windows-terminal.json" "$fragments/dotfiles.json"
+{{ end -}}

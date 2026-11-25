@@ -1,0 +1,8 @@
+# GUI apps for Linux desktops (Ubuntu: snap is preinstalled). Format: <snap> [flags]
+# macOS gets the same apps from home/dot_config/homebrew/Brewfile.tmpl.
+alacritty --classic
+code --classic
+intellij-idea-ultimate --classic
+vivaldi
+spotify
+1password
