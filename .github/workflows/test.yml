@@ -88,6 +88,7 @@ jobs:
           grep -q '#1e1e2e' ~/.config/alacritty/alacritty.toml
           grep -q '#181825' ~/.config/tmux/tmux.conf
           grep -q 'Catppuccin Mocha' ~/.config/git/config
+          test "$(cat ~/.config/dotfiles/theme)" = catppuccin-mocha   # read by the nvim config
           zsh -lc 'test -z "$(chezmoi diff)"'
 
   macos:

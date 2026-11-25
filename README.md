@@ -68,7 +68,7 @@ theme set nord             # switch: regenerates the configs, reloads tmux, rebu
 ```
 - The palettes are defined once in `home/.chezmoidata/themes.toml`, and every themed config is generated from them. To add a theme, add its palette there and its name to the choice list in `home/.chezmoi.toml.tmpl`.
 - Most CLI tools (eza, lazygit, git) use the terminal's 16 colors, so they follow the theme automatically.
-- **Neovim** sets its colorscheme in its own repo. The active theme is exported as `$COLOR_THEME`, so the nvim config can read it.
+- **Neovim** follows the theme too: the active theme name is written to `~/.config/dotfiles/theme`, and the [nvim config](https://github.com/trinne/nvim) maps it to a colorscheme and watches the file, so running nvim instances switch along with `theme set`. Interactive shells also export it as `$COLOR_THEME`.
 
 ## Fonts and terminal
 
@@ -136,6 +136,7 @@ The engine is chosen in `chezmoi init`, and `devbox` uses it automatically (`DEV
 - **Config:** not in this repo but in its own repo, [`trinne/nvim`](https://github.com/trinne/nvim). chezmoi clones it to `~/.config/nvim` (`home/.chezmoiexternal.toml.tmpl`) and `chezmoi update` refreshes it weekly.
 - **Editing:** `~/.config/nvim` is a regular git repo. Edit it there, commit and push to `trinne/nvim`.
 - **Plugins and LSPs:** Lazy and mason install them on first start. In the container they are stored in the `devbox-nvim` volume.
+- **Theme:** nvim reads the active theme from `~/.config/dotfiles/theme` (see [Themes](#themes)). The theme names are a contract between the two repos: adding a theme here also needs its colorscheme in `lua/trinne/theme.lua` in the nvim repo.
 - **Note:** mason's npm-based servers (ts_ls, eslint, prettier…) need Node. The host has no Node unless the `node` toolset is selected.
 
 ## Everyday use

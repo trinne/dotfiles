@@ -2,7 +2,7 @@
 # macOS gets the same apps from home/dot_config/homebrew/Brewfile.tmpl.
 alacritty --classic
 code --classic
-intellij-idea-ultimate --classic
+intellij-idea --classic
 vivaldi
 spotify
 1password
