@@ -37,7 +37,7 @@ jobs:
           zsh -lc 'nvim --headless "+lua require(\"trinne.tools\").sync()" +qa'
           out=$(zsh -lc 'nvim --headless "+lua vim.wait(1000)" "+lua print(vim.fn.execute(\"messages\"))" +qa' 2>&1)
           echo "$out"
-          ! grep -E 'E[0-9]+:|[Ee]rror' <<<"$out"
+          ! printf '%s\n' "$out" | grep -E 'E[0-9]+:|[Ee]rror'
       - name: Project toolsets (toolset add node clojure)
         run: |
           mkdir -p /tmp/proj && cd /tmp/proj
