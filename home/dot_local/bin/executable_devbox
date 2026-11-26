@@ -81,7 +81,9 @@ args=(
   --volume "$PWD:/workspace"
   --workdir /workspace
   --volume devbox-mise:/home/dev/.local/share/mise     # project tools (shared by all projects)
-  --volume devbox-nvim:/home/dev/.local/share/nvim     # Lazy plugins, mason LSPs
+  --volume devbox-nvim:/home/dev/.local/share/nvim     # nvim plugins, parsers, mason tools
+  --volume devbox-cache:/home/dev/.cache               # caches, e.g. jdtls project indexes
+  --volume devbox-gradle:/home/dev/.gradle             # Gradle dependencies and wrappers
   --volume devbox-history:/home/dev/.local/state/zsh   # shell history
   --env TERM="${TERM:-xterm-256color}"
   --env COLORTERM="${COLORTERM:-truecolor}"

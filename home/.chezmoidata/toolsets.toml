@@ -6,6 +6,7 @@
 node    = ["node@lts", "pnpm@latest"]
 python  = ["python@3.13", "uv@latest"]
 java    = ["java@temurin-25", "gradle@latest"]
+kotlin  = ["java@temurin-25", "kotlin@latest", "gradle@latest"]
 clojure = ["java@temurin-25", "clojure@latest", "leiningen@latest"]
 k8s     = ["kubectl@latest", "helm@latest", "k9s@latest", "stern@latest"]
 aws     = ["aws-cli@latest"]

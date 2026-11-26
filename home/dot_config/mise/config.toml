@@ -5,6 +5,7 @@
 [tools]
 chezmoi = "latest"
 neovim = "latest"
+tree-sitter = "latest"   # nvim-treesitter builds parsers with it
 starship = "latest"
 fzf = "latest"
 zoxide = "latest"

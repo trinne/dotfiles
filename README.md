@@ -43,9 +43,9 @@ chezmoi asks which one the machine is (the default comes from whether a graphica
 
 | | Host (mac / WSL) | devbox container |
 |---|---|---|
-| **Base**: zsh, starship, fzf, zoxide, git, chezmoi, mise, tmux, Neovim, rg, fd, bat, eza, jq, yq, gh, lazygit, delta | ✓ | ✓ (in the image) |
+| **Base**: zsh, starship, fzf, zoxide, git, chezmoi, mise, tmux, Neovim (+ tree-sitter CLI), rg, fd, bat, eza, jq, yq, gh, lazygit, delta | ✓ | ✓ (in the image) |
 | **Container engine**: Podman or Docker/OrbStack | ✓ | – |
-| **Toolsets**: node, python, java, clojure, k8s, aws, shell | only the selected ones | from the project's `mise.toml` |
+| **Toolsets**: node, python, java, kotlin, clojure, k8s, aws, shell | only the selected ones | from the project's `mise.toml` |
 
 - The base tools are defined in `home/dot_config/mise/config.toml`.
 - Toolsets are defined in `home/.chezmoidata/toolsets.toml`. A toolset added there is available both to the `toolset` command and as a host option.
@@ -97,7 +97,9 @@ devbox build                         # rebuild the image (--pull: also a fresh D
 | Volume | Contents |
 |---|---|
 | `devbox-mise` | project tools, shared by all projects (e.g. Java is downloaded once) |
-| `devbox-nvim` | Lazy plugins and mason LSPs |
+| `devbox-nvim` | nvim plugins, treesitter parsers, mason language servers |
+| `devbox-cache` | caches, e.g. jdtls project indexes |
+| `devbox-gradle` | Gradle dependencies and wrapper distributions |
 | `devbox-history` | zsh history |
 
 The base tools live system-wide in the image (`/usr/local/share/mise`), so the volume never hides them and a new image always brings new base tools.
@@ -132,12 +134,13 @@ The engine is chosen in `chezmoi init`, and `devbox` uses it automatically (`DEV
 
 ## Neovim
 
-- **Installation:** mise installs it as a base tool (`neovim` in `home/dot_config/mise/config.toml`).
+- **Installation:** mise installs it as a base tool (`neovim` in `home/dot_config/mise/config.toml`), together with the `tree-sitter` CLI that nvim-treesitter uses to build parsers. The config needs Neovim 0.12+.
 - **Config:** not in this repo but in its own repo, [`trinne/nvim`](https://github.com/trinne/nvim). chezmoi clones it to `~/.config/nvim` (`home/.chezmoiexternal.toml.tmpl`) and `chezmoi update` refreshes it weekly.
 - **Editing:** `~/.config/nvim` is a regular git repo. Edit it there, commit and push to `trinne/nvim`.
-- **Plugins and LSPs:** Lazy and mason install them on first start. In the container they are stored in the `devbox-nvim` volume.
+- **Plugins:** the built-in `vim.pack` installs them on first start, at the revisions in the config's `nvim-pack-lock.json`. Update with `:PackUpdate`, then commit the lockfile in `~/.config/nvim`. In the container, plugins live in the `devbox-nvim` volume.
+- **Language tools:** mason installs language servers, formatters and debug adapters only for runtimes on `PATH`: Node tools need `node`, Java/Kotlin tools need `java`. On a host without the `node` toolset there are no npm-based servers. In a devbox container, the project's `mise.toml` brings the runtime.
+- **Keys:** press `<space>` and wait, and which-key shows what follows. `<space>?` lists the buffer's keymaps. The full list is in the nvim repo's README.
 - **Theme:** nvim reads the active theme from `~/.config/dotfiles/theme` (see [Themes](#themes)). The theme names are a contract between the two repos: adding a theme here also needs its colorscheme in `lua/trinne/theme.lua` in the nvim repo.
-- **Note:** mason's npm-based servers (ts_ls, eslint, prettier…) need Node. The host has no Node unless the `node` toolset is selected.
 
 ## Everyday use
 

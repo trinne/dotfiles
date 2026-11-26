@@ -44,7 +44,7 @@ RUN --mount=type=secret,id=github_token,uid=${USER_UID} \
  && DOTFILES_SOURCE="$HOME/.local/share/chezmoi" sh "$HOME/.local/share/chezmoi/install.sh" \
  && { mise cache clear --yes || true; } \
  && rm -rf "$HOME/.local/share/mise/installs" && mise reshim \
- && mkdir -p "$HOME/.local/share/mise" "$HOME/.local/share/nvim" "$HOME/.local/state/zsh"
+ && mkdir -p "$HOME/.local/share/mise" "$HOME/.local/share/nvim" "$HOME/.local/state/zsh" "$HOME/.cache" "$HOME/.gradle"
 
 # Fail the build if the base toolchain is not usable. Base tools live in
 # /usr/local/share/mise; languages come per project (mise.toml) at runtime.

@@ -29,7 +29,7 @@
 {{- $toolsetsSpec := env "DOTFILES_TOOLSETS" -}}
 {{- if not $toolsetsSpec -}}
 {{-   if $interactive -}}
-{{-     $toolsetsSpec = promptStringOnce . "hostToolsetsSpec" "Toolsets to install globally on this host (comma-separated: node,python,java,clojure,k8s,aws,shell; empty = none)" "" -}}
+{{-     $toolsetsSpec = promptStringOnce . "hostToolsetsSpec" "Toolsets to install globally on this host (comma-separated: node,python,java,kotlin,clojure,k8s,aws,shell; empty = none)" "" -}}
 {{-   else -}}
 {{-     $toolsetsSpec = get . "hostToolsetsSpec" | default "" -}}
 {{-   end -}}

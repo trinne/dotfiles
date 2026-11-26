@@ -31,6 +31,13 @@ jobs:
           zsh -lic 'nvim --version | head -1 && rg --version | head -1 && starship --version'
           test -d /usr/local/share/mise/installs/neovim
           ! zsh -lc 'mise which node' 2>/dev/null
+      - name: Neovim config starts cleanly (plugins and parsers install, no errors)
+        run: |
+          zsh -lc 'tree-sitter --version'
+          zsh -lc 'nvim --headless "+lua require(\"trinne.tools\").sync()" +qa'
+          out=$(zsh -lc 'nvim --headless "+lua vim.wait(1000)" "+lua print(vim.fn.execute(\"messages\"))" +qa' 2>&1)
+          echo "$out"
+          ! grep -E 'E[0-9]+:|[Ee]rror' <<<"$out"
       - name: Project toolsets (toolset add node clojure)
         run: |
           mkdir -p /tmp/proj && cd /tmp/proj
